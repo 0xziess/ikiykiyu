@@ -186,8 +186,7 @@ function UILibrary:CreateWindow(title)
             for _, task in pairs(self.Tasks) do
                 if typeof(task) == "thread" and coroutine.status(task) ~= "dead" then
                     pcall(function() 
-                        task_cancel(task)
-                        -- coroutine.close(task)
+                        coroutine.close(task)
                     end)
                 elseif typeof(task) == "RBXScriptConnection" then
                     pcall(function() task:Disconnect() end)
