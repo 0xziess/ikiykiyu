@@ -5,6 +5,7 @@ local config = {
     fontFamily = "Code", -- Gothic-like font
     mainColor = Color3.fromRGB(25, 25, 25),
     accentColor = Color3.fromRGB(120, 48, 43), -- Dark red for gothic theme
+    accentTitleColor = Color3.fromRGB(100, 48, 43),
     textColor = Color3.fromRGB(255, 255, 255),
     secondaryColor = Color3.fromRGB(35, 35, 35),
     cornerRadius = UDim.new(0, 4),
@@ -69,7 +70,7 @@ function UILibrary:CreateWindow(title)
     local TitleBar = Instance.new("Frame")
     TitleBar.Name = "TitleBar"
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
-    TitleBar.BackgroundColor3 = config.accentColor
+    TitleBar.BackgroundColor3 = config.accentTitleColor
     TitleBar.BorderSizePixel = 0
     TitleBar.Parent = MainFrame
     
