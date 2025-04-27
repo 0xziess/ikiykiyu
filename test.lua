@@ -125,7 +125,6 @@ table.insert(Window.Connections, closeConnection)
     Window.ActiveTab = nil
 
      function Window:Unload()
-        print("unloaded")
     -- Disconnect all event connections
     for _, connection in pairs(self.Connections) do
         if connection.Connected then
