@@ -20,8 +20,9 @@ AimbotSection:AddToggle("Auto Blow", false, function(value)
     toggleStates.autoBlowEnabled = value
 end)
 
-task.spawn(function()
-    while true do
+-- Spawn and register the task
+Window:RegisterTask(task.spawn(function()
+    while not Window._unloaded do  -- Check if window is unloaded
         if toggleStates.autoBlowEnabled then
             print("test")
         else
@@ -29,7 +30,7 @@ task.spawn(function()
         end
         task.wait(0.1)
     end
-end)
+end))
 
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     print("Sell:", value)

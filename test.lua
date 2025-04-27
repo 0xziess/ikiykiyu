@@ -168,11 +168,31 @@ function UILibrary:CreateWindow(title)
     local Window = {
         Tabs = {},
         ActiveTab = nil,
-        GUI = ScreenGui -- Store reference to ScreenGui for unloading
+        GUI = ScreenGui,
+        _unloaded = false,
+        Tasks = {},
     }
+
+    -- Function to register a task with the window
+    function Window:RegisterTask(task)
+        table.insert(self.Tasks, task)
+        return task
+    end
 
     -- Add the Unload function
     function Window:Unload()
+        self._unloaded = true
+        for _, task in pairs(self.Tasks) do
+            if typeof(task) == "thread" and coroutine.status(task) ~= "dead" then
+                coroutine.close(task)
+            elseif typeof(task) == "RBXScriptConnection" then
+                task:Disconnect()
+            end
+        end
+        for key, _ in pairs(toggleStates) do
+            toggleStates[key] = false
+        end
+        self.Tasks = {}
         if self.GUI and self.GUI.Parent then
             self.GUI:Destroy()
         end
