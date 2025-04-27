@@ -21,10 +21,12 @@ AimbotSection:AddToggle("Auto Blow", false, function(value)
 end)
 
 task.spawn(function()
-    if toggleStates.autoBlowEnabled then
-        print("test")
-    else
-        print("not test")
+    while true do
+        if toggleStates.autoBlowEnabled then
+            print("test")
+        else
+            print("not test")
+        end
     end
 end)
 
