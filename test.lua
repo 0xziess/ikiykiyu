@@ -172,12 +172,6 @@ function UILibrary:CreateWindow(title)
         GUI = ScreenGui,
     }
 
-    -- Function to register a task with the window
-    function Window:RegisterTask(task)
-        table.insert(self.Tasks, task)
-        return task
-    end
-
     -- Add the Unload function
     function Window:Unload()
         _G.UIRunning = false

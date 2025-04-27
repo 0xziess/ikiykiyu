@@ -21,7 +21,7 @@ AimbotSection:AddToggle("Auto Blow", false, function(value)
 end)
 
 -- Spawn and register the task
-Window:RegisterTask(task.spawn(function()
+task.spawn(function()
     while _G.UIRunning do
         if toggleStates.autoBlowEnabled then
             print("test")
@@ -30,7 +30,7 @@ Window:RegisterTask(task.spawn(function()
         end
         task.wait(0.1)
     end
-end))
+end)
 
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     print("Sell:", value)
