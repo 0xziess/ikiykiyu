@@ -175,11 +175,6 @@ function UILibrary:CreateWindow(title)
     -- Add the Unload function
     function Window:Unload()
         _G.UIRunning = false
-        if toggleStates then
-            for key, _ in pairs(toggleStates) do
-                toggleStates[key] = false
-            end
-        end
         if self.GUI and self.GUI.Parent then
             self.GUI:Destroy()
         end
