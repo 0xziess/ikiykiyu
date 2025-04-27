@@ -128,7 +128,7 @@ function UILibrary:CreateWindow(title)
     CloseButton.Size = UDim2.new(0, 30, 0, 30)
     CloseButton.Position = UDim2.new(1, -30, 0, 0)
     CloseButton.BackgroundTransparency = 1
-    CloseButton.Text = "X"
+    CloseButton.Text = "x"
     CloseButton.TextColor3 = config.textColor
     CloseButton.Font = Enum.Font[config.fontFamily]
     CloseButton.TextSize = 18
