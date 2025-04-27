@@ -124,6 +124,10 @@ function UILibrary:CreateWindow(title)
         ScreenGui:Destroy()
     end
 end
+
+    CloseButton.MouseButton1Click:Connect(function()
+    Window:Unload()
+end)
     
     -- Add a tab to the window
     function Window:AddTab(tabName)
