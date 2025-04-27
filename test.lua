@@ -117,6 +117,13 @@ function UILibrary:CreateWindow(title)
     local Window = {}
     Window.Tabs = {}
     Window.ActiveTab = nil
+
+    function Window:Unload()
+    -- Simply destroy the ScreenGui
+    if ScreenGui and ScreenGui.Parent then
+        ScreenGui:Destroy()
+    end
+end
     
     -- Add a tab to the window
     function Window:AddTab(tabName)
