@@ -115,124 +115,173 @@ Window:CreateTask(function()
     if toggleStates.autoCollectEnabled then
         collectItems()
     end
-end, 0.1)
+end, 0.01)
 
 -- Enchanting Tab Sections
 local TriggerSection = CombatTab:AddSection("Enchanting")
+
+local function ResetEnchant()
+    local success, result = pcall(function()
+        local enchantTitle = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame.Inner.Pets.Details.Enchants["Enchant1"].Title
+		local enchantTitle2 = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame.Inner.Pets.Details.Enchants["Enchant2"].Title
+        enchantTitle.Text = "NIL"
+		enchantTitle2.Text = "NIL"
+        return enchantTitle.Text or enchantTitle2.Text
+    end)
+
+    if not success then
+        warn("Failed to reset enchant display:", result)
+        return nil
+    end
+    return result
+end
 TriggerSection:AddToggle("Auto Enchant", false, function(value)
-    print("Trigger Bot:", value)
+    toggleStates.autoEnchantEnabled = value
+
+    if toggleStates.autoEnchantEnabled then
+        ResetEnchant()
+    end
 end)
+local ENCHANT_COOLDOWN = 0.01
+local function CleanEnchantName(name)
+    if type(name) ~= "string" then
+        warn("CleanEnchantName received non-string input:", name, type(name))
+        return ""
+    end
+
+    -- Remove non-alphanumeric characters
+    return name:gsub("[^%w%s]", "")
+end
+local function TrimWhitespace(str)
+    return str:match("^%s*(.-)%s*$")
+end
+local function GetCurrentEnchants(petName)
+    local success, result = pcall(function()
+        -- Path to the pet's enchant titles
+        local enchantTitle1 = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame.Inner.Pets.Details.Enchants["Enchant1"].Title
+        local enchantTitle2 = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame.Inner.Pets.Details.Enchants["Enchant2"].Title
+
+        -- Return both enchant title texts in a table
+        return {
+            enchantTitle1.Text,
+            enchantTitle2.Text
+        }
+    end)
+
+    if not success then
+        warn("Failed to get current enchants for pet:", petName, result)
+        return {}
+    end
+
+    return result
+end
+local function autoEnchantLogic()
+    -- Check if pet and enchant are selected
+    if not selectedStates.pet or selectedStates.pet == "unknown" then
+        print("No pet selected for enchanting.")
+        return false
+    end
+    
+    if not selectedStates.enchant or selectedStates.enchant == "" then
+        print("No desired enchant selected.")
+        return false
+    end
+    
+    -- Get the pet UUID and desired enchant
+    local petUUID = selectedStates.pet
+    local desiredEnchant = selectedStates.enchant
+    
+    print("Checking enchants for pet UUID:", petUUID)
+    print("Desired enchant:", desiredEnchant)
+    
+    -- Get current enchants for the pet
+    local currentEnchants = GetCurrentEnchants(petUUID)
+    
+    if #currentEnchants > 0 then
+        print("Current enchants for pet:")
+        for i, enchant in ipairs(currentEnchants) do
+            print("  Slot", i, ":", enchant)
+        end
+        
+        -- Check if the desired enchant is already present
+        local matchFound = false
+        
+        for _, currentEnchant in ipairs(currentEnchants) do
+            local cleanedCurrentEnchant = CleanEnchantName(currentEnchant)
+            local trimmedCurrentEnchant = TrimWhitespace(cleanedCurrentEnchant)
+            
+            local cleanedDesiredEnchant = CleanEnchantName(desiredEnchant)
+            local trimmedDesiredEnchant = TrimWhitespace(cleanedDesiredEnchant)
+            
+            print("Comparing:", trimmedCurrentEnchant, "with:", trimmedDesiredEnchant)
+            
+            if trimmedCurrentEnchant == trimmedDesiredEnchant then
+                print("Desired enchant already obtained for pet!")
+                matchFound = true
+                break
+            end
+        end
+        
+        -- If the desired enchant is not found, reroll
+        if not matchFound then
+            print("Desired enchant not found, rerolling...")
+            
+            local args = {
+                "RerollEnchants",
+                petUUID
+            }
+
+            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Function:InvokeServer(unpack(args))
+            
+            return true
+        else
+            return false
+        end
+    else
+        print("Failed to get current enchants for pet")
+        return false
+    end
+end
+Window:CreateTask(function()
+    if toggleStates.autoEnchantEnabled then
+        autoEnchantLogic()
+    end
+end, 0.1)
+
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 TriggerSection:AddDropdown("Enchant", enchantOptions, "", function(selected)
     selectedStates.enchant = selected
 end)
 
-_G.PetsData = {}
 local function GetEquippedPetNames()
-    local petData = {}
-    
+    local petNames = {}
     local success, result = pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        local inventoryFrame = player.PlayerGui.ScreenGui.Inventory.Frame
-        
+        local inventoryFrame = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame
+
         -- Check if the Inventory frame is visible
-        if not inventoryFrame.Visible then
-            -- Try to make it visible or return current data
-            return _G.PetsData
-        end
-        
-        local list = inventoryFrame.Inner.Pets.Main.ScrollingFrame.Team.Main.List
-        
-        for _, petFrame in ipairs(list:GetChildren()) do
-            if petFrame:IsA("Frame") and petFrame.Name ~= "UIListLayout" then
-                -- Get the UUID (original name with team suffix removed)
-                local petUUID = petFrame.Name:gsub("-team%-?%d*", "")
-                
-                -- Try to get the display name from the UI
-                local displayName = "Unknown Pet"
-                local rarity = "Common" -- Default rarity
-                local level = "1" -- Default level
-                
-                -- Use pcall to safely attempt to access the display name and other data
-                pcall(function()
-                    if petFrame.Inner.Button.Inner.DisplayName then
-                        displayName = petFrame.Inner.Button.Inner.DisplayName.Text
-                    end
-                    
-                    -- Try to get rarity if available
-                    if petFrame.Inner.Button.Inner.Rarity then
-                        rarity = petFrame.Inner.Button.Inner.Rarity.Text
-                    end
-                    
-                    -- Try to get level if available
-                    if petFrame.Inner.Button.Inner.Level then
-                        level = petFrame.Inner.Button.Inner.Level.Text:match("Lv. (%d+)") or "1"
-                    end
-                end)
-                
-                -- Create a formatted display text
-                local displayText = string.format("%s", displayName)
-                
-                -- Store the pet data
-                table.insert(petData, {
-                    uuid = petUUID,
-                    name = displayName,
-                    rarity = rarity,
-                    level = level,
-                    displayText = displayText
-                })
+        if inventoryFrame.Visible then
+            local list = inventoryFrame.Inner.Pets.Main.ScrollingFrame.Team.Main.List
+
+            for _, petFrame in ipairs(list:GetChildren()) do
+                if petFrame.Name ~= "UIListLayout" then
+                    -- Remove the "-team-X" part from the pet name
+                    local petName = petFrame.Name:gsub("-team%-?%d*", "")
+                    table.insert(petNames, petName)
+                end
             end
         end
-        
-        return petData
+        return petNames
     end)
-    
+
     if not success then
         warn("Failed to get equipped pets:", result)
-        return _G.PetsData -- Return existing data on error
+        return {"Error loading pets"}
     end
-    
-    -- If no pets were found but we have existing data, return that
-    if #result == 0 and #_G.PetsData > 0 then
-        return _G.PetsData
-    elseif #result == 0 then
-        return {
-            {uuid = "none", name = "No pets equipped", displayText = "No pets equipped"}
-        }
-    end
-    
-    -- Update the global pet data
-    _G.PetsData = result
-    
-    return result
+
+    return petNames
 end
-local function InitializePetDropdown()
-    local petsData = GetEquippedPetNames()
-    
-    local petDisplayOptions = {}
-    for _, pet in ipairs(petsData) do
-        table.insert(petDisplayOptions, pet.displayText)
-    end
-    
-    return petDisplayOptions
-end
-local petOptions = InitializePetDropdown()
-TriggerSection:AddDropdown("Pet (Equipped in order)", petOptions, petOptions[1] or "", function(selected)
-    -- Find the selected pet's data
-    local selectedPetData = nil
-    for _, pet in ipairs(_G.PetsData) do
-        if pet.displayText == selected then
-            selectedPetData = pet
-            break
-        end
-    end
-    
-    -- Store the complete pet data
-    if selectedPetData then
-        selectedStates.pet = selectedPetData
-    else
-        selectedStates.pet = { displayText = selected, uuid = "unknown" }
-    end
+TriggerSection:AddDropdown("Pet (Equipped in order)", GetEquippedPetNames(), "", function(selected)
+    selectedStates.pet = selected
 end)
 
 -- Optimize Tab Sections
@@ -244,19 +293,14 @@ end)
 -- Visuals Tab Sections
 local ESPSection = VisualsTab:AddSection("Rift")
 ESPSection:AddToggle("Auto Rift", false, function(value)
-    print("Player ESP:", value)
 end)
 ESPSection:AddDropdown("Fallback Egg", {"ForceField", "Neon", "Plastic"}, "", function(selected)
-    print("Chams Material:", selected)
 end)
 ESPSection:AddDropdown("Rifts", {"ForceField", "Neon", "Plastic"}, "", function(selected)
-    print("Chams Material:", selected)
 end)
 ESPSection:AddDropdown("Rift's luck", {"ForceField", "Neon", "Plastic"}, "", function(selected)
-    print("Chams Material:", selected)
 end)
 ESPSection:AddSlider("Egg Amount", 1, 6, 5, function(value)
-    print("Aimbot FOV:", value)
 end)
 
 -- Misc Tab Sections
