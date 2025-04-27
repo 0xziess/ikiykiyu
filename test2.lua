@@ -23,11 +23,14 @@ AimbotSection:AddDropdown("Aimbot Target", {"Head", "Torso", "Random"}, "Head", 
 end)
 
 local TriggerSection = CombatTab:AddSection("Enchanting")
-TriggerSection:AddToggle("Enable Trigger Bot", false, function(value)
+TriggerSection:AddToggle("Auto Enchant", false, function(value)
     print("Trigger Bot:", value)
 end)
-TriggerSection:AddSlider("Trigger Delay", 0, 1000, 100, function(value)
-    print("Trigger Delay:", value)
+TriggerSection:AddDropdown("Enchant", {"high roll", "teamup1", "test3"}, "", function(selected)
+    print("pet:", selected)
+end)
+TriggerSection:AddDropdown("Pet (Equipped in order)", {"pet1", "pet2", "pet3"}, "", function(selected)
+    print("pet:", selected)
 end)
 
 -- Visuals Tab Sections
