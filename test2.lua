@@ -27,6 +27,7 @@ task.spawn(function()
         else
             print("not test")
         end
+        task.wait(0.1)
     end
 end)
 
