@@ -7,6 +7,16 @@ local CombatTab = Window:AddTab("Farming")
 local VisualsTab = Window:AddTab("Rifts")
 local MiscTab = Window:AddTab("Settings")
 
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LP = Players.LocalPlayer
+local Remote = ReplicatedStorage.Shared.Framework.Network.Remote.Event
+local Pickup = ReplicatedStorage.Remotes.Pickups.CollectPickup
+
 local toggleStates = {
     autoBlowEnabled = false,
     autoSellEnabled = false,
@@ -19,22 +29,28 @@ local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
     toggleStates.autoBlowEnabled = value
 end)
-
--- Spawn and register the task
 task.spawn(function()
     while _G.UIRunning do
         if toggleStates.autoBlowEnabled then
-            print("test")
-        else
-            print("not test")
+            Remote:FireServer("BlowBubble")
         end
-        task.wait(0.1)
+        task.wait(0.01)
     end
 end)
 
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     print("Sell:", value)
 end)
+task.spawn(function()
+    while _G.UIRunning do
+        if toggleStates.autoSellEnabled then
+            Remote:FireServer("SellBubble")
+            task.wait(1)
+        end
+        task.wait(0.1)
+    end
+end)
+
 AimbotSection:AddToggle("Auto Collect", false, function(value)
     print("Sell:", value)
 end)
