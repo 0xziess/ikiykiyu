@@ -223,9 +223,6 @@ function UILibrary:CreateWindow(title)
         if self.GUI and self.GUI.Parent then
             self.GUI:Destroy()
         end
-        if collectgarbage then
-            collectgarbage("collect")
-        end
     end
 
     -- Connect the CloseButton event
