@@ -507,24 +507,23 @@ SectionPadding.Parent = SectionContent
                 DropdownCorner.CornerRadius = UDim.new(0, 4)
                 DropdownCorner.Parent = DropdownContainer
                 
--- Adjust the main label to not overlap with the right side container
-local DropdownLabel = Instance.new("TextLabel")
-DropdownLabel.Name = "Label"
-DropdownLabel.Size = UDim2.new(1, -140, 1, 0) -- Leave space for the right side
-DropdownLabel.Position = UDim2.new(10, 10, 0, 0)
-DropdownLabel.BackgroundTransparency = 1
-DropdownLabel.Text = dropdownText
-DropdownLabel.TextColor3 = config.textColor
-DropdownLabel.Font = Enum.Font[config.fontFamily]
-DropdownLabel.TextSize = 16
-DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-DropdownLabel.Parent = DropdownContainer
+                 local DropdownLabel = Instance.new("TextLabel")
+                 DropdownLabel.Name = "Label"
+                 DropdownLabel.Size = UDim2.new(1, -20, 0, config.elementHeight)
+                 DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+                 DropdownLabel.BackgroundTransparency = 1
+                 DropdownLabel.Text = dropdownText
+                 DropdownLabel.TextColor3 = config.textColor
+                 DropdownLabel.Font = Enum.Font[config.fontFamily]
+                 DropdownLabel.TextSize = 16
+                 DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+                 DropdownLabel.Parent = DropdownContainer
                 
 -- Create a container for the selected value and arrow to better control their layout
 local RightSideContainer = Instance.new("Frame")
 RightSideContainer.Name = "RightSide"
 RightSideContainer.Size = UDim2.new(0, 130, 1, 0) -- Fixed width for the right side
-RightSideContainer.Position = UDim2.new(1, -130, 0, 0) -- Position from the right
+RightSideContainer.Position = UDim2.new(0.2, -130, 0, 0) -- Position from the right
 RightSideContainer.BackgroundTransparency = 1
 RightSideContainer.Parent = DropdownContainer
 
