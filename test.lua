@@ -82,10 +82,6 @@ function UILibrary:CreateWindow(title)
     CloseButton.TextSize = 18
     CloseButton.Parent = TitleBar
     
-    CloseButton.MouseButton1Click:Connect(function()
-    Window:Unload()
-end)
-    
     -- Tab container (left side)
     local TabContainer = Instance.new("Frame")
     TabContainer.Name = "TabContainer"
@@ -121,13 +117,6 @@ end)
     local Window = {}
     Window.Tabs = {}
     Window.ActiveTab = nil
-
-     function Window:Unload()
-    -- Simply destroy the ScreenGui
-    if ScreenGui and ScreenGui.Parent then
-        ScreenGui:Destroy()
-    end
-end
     
     -- Add a tab to the window
     function Window:AddTab(tabName)
