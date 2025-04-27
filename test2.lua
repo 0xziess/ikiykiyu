@@ -24,6 +24,10 @@ local toggleStates = {
     autoEnchantEnabled = false,
 }
 
+local selectedStates = {
+    enchant = {},
+    pet = {},
+}
 
 -- Auto Farm Tab Sections
 local AimbotSection = CombatTab:AddSection("Auto")
@@ -56,61 +60,44 @@ AimbotSection:AddToggle("Auto Collect", false, function(value)
     toggleStates.autoCollectEnabled = value
 end)
 local function collectItems()
+    -- Cache the remote event reference outside the loop
+    local pickupRemote = Pickup
+    if not pickupRemote then
+        warn("RemoteEvent 'Pickup' is nil!")
+        return
+    end
+    
     local renderedFolder = workspace:FindFirstChild("Rendered")
-    if renderedFolder then
-        local correctChunkerFolder = nil
-
-        -- Find the "Chunker" folder primarily containing collectible models
-        for _, folder in ipairs(renderedFolder:GetChildren()) do
-            if folder.Name == "Chunker" then
-                local collectibleCount = 0
-                local totalModelCount = 0
-                for _, item in ipairs(folder:GetChildren()) do
-                    if item:IsA("Model") then
-                        totalModelCount += 1
-                        if string.len(item.Name) >= 33 and string.len(item.Name) <= 37 then
-                            collectibleCount += 1
-                        end
-                    end
-                end
-
-                -- Heuristic: If a significant portion (e.g., > 0.8) of models are collectibles, consider this the right folder
-                if totalModelCount > 0 and (collectibleCount / totalModelCount) > 0.8 then
-                    correctChunkerFolder = folder
-                    break
-                elseif totalModelCount > 0 and collectibleCount > 0 and totalModelCount == collectibleCount then -- Alternative: If all models are collectibles
-                    correctChunkerFolder = folder
-                    break
-                end
+    if not renderedFolder then
+        return
+    end
+    
+    local chunkerFolder = renderedFolder:FindFirstChild("Chunker")
+    if not chunkerFolder then
+        return
+    end
+    
+    -- Get all collectibles in one pass
+    local collectibles = {}
+    for _, item in ipairs(chunkerFolder:GetChildren()) do
+        if item:IsA("Model") then
+            local nameLength = #item.Name
+            if nameLength >= 33 and nameLength <= 37 then
+                table.insert(collectibles, item)
             end
         end
-
-        if correctChunkerFolder then
-            for _, collectible in ipairs(correctChunkerFolder:GetChildren()) do
-                if collectible:IsA("Model") and string.len(collectible.Name) >= 33 and string.len(collectible.Name) <= 37 then
-                    local collectibleId = collectible.Name
-                    pcall(function()
-                        if Pickup then
-                            local args = {
-                                [1] = collectibleId
-                            }
-                            Pickup:FireServer(unpack(args)) -- Using unpack(args)
-                            collectible:Destroy()
-                        else
-                            warn("RemoteEvent 'CollectPickup' is nil!")
-                        end
-                    end)
-                    task.wait(0.15) -- Small delay AFTER firing the event
-                end
-            end
-        else
-            print("Could not identify the correct Chunker folder for collectibles.")
-        end
-    else
-        print("workspace.Rendered NOT found.")
+    end
+    
+    -- Process collectibles
+    for _, collectible in ipairs(collectibles) do
+        local collectibleId = collectible.Name
+        pcall(function()
+            pickupRemote:FireServer(collectibleId)
+            collectible:Destroy()
+        end)
+        task.wait(0.15)
     end
 end
-
 task.spawn(function()
     while _G.UIRunning do
         if toggleStates.autoCollectEnabled then
@@ -125,7 +112,11 @@ local TriggerSection = CombatTab:AddSection("Enchanting")
 TriggerSection:AddToggle("Auto Enchant", false, function(value)
     print("Trigger Bot:", value)
 end)
+local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 
+TriggerSection:AddDropdown("Pet (Equipped in order)", {"pet1", "pet2", "pet3"}, "", function(selected)
+    selectedStates.pet
+end)
 
 -- Optimize Tab Sections
 local OptimizeSection = CombatTab:AddSection("Optimization")
