@@ -82,9 +82,10 @@ function UILibrary:CreateWindow(title)
     CloseButton.TextSize = 18
     CloseButton.Parent = TitleBar
     
-    CloseButton.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
-    end)
+    local closeConnection = CloseButton.MouseButton1Click:Connect(function()
+    Window:Unload()
+end)
+table.insert(Window.Connections, closeConnection)
     
     -- Tab container (left side)
     local TabContainer = Instance.new("Frame")
@@ -120,7 +121,22 @@ function UILibrary:CreateWindow(title)
     -- Window object
     local Window = {}
     Window.Tabs = {}
+    Window.Connections = {} -- Store all connections for cleanup
     Window.ActiveTab = nil
+
+     function Window:Unload()
+    -- Disconnect all event connections
+    for _, connection in pairs(self.Connections) do
+        if connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    
+    -- Remove the ScreenGui
+    if ScreenGui then
+        ScreenGui:Destroy()
+    end
+end
     
     -- Add a tab to the window
     function Window:AddTab(tabName)
