@@ -37,7 +37,6 @@ local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
     toggleStates.autoBlowEnabled = value
 end)
-
 Window:CreateTask(function()
     if toggleStates.autoBlowEnabled then
         Remote:FireServer("BlowBubble")
@@ -47,15 +46,12 @@ end, 0.01)
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     toggleStates.autoSellEnabled = value
 end)
-task.spawn(function()
-    while _G.UIRunning do
-        if toggleStates.autoSellEnabled then
-            Remote:FireServer("SellBubble")
-            task.wait(1)
-        end
-        task.wait(0.1)
+Window:CreateTask(function()
+    if toggleStates.autoSellEnabled then
+        Remote:FireServer("SellBubble")
+        task.wait(1)
     end
-end)
+end, 0.1)
 
 AimbotSection:AddToggle("Auto Collect", false, function(value)
     toggleStates.autoCollectEnabled = value
@@ -115,14 +111,11 @@ local function collectItems()
         print("workspace.Rendered NOT found.")
     end
 end
-task.spawn(function()
-    while _G.UIRunning do
-        if toggleStates.autoCollectEnabled then
-            collectItems()
-        end
-        task.wait(0.1)
+Window:CreateTask(function()
+    if toggleStates.autoCollectEnabled then
+        collectItems()
     end
-end)
+end, 0.1)
 
 -- Enchanting Tab Sections
 local TriggerSection = CombatTab:AddSection("Enchanting")
@@ -133,8 +126,113 @@ local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV
 TriggerSection:AddDropdown("Enchant", enchantOptions, "", function(selected)
     selectedStates.enchant = selected
 end)
-TriggerSection:AddDropdown("Pet (Equipped in order)", {"pet1", "pet2", "pet3"}, "", function(selected)
-    selectedStates.pet = selected
+
+_G.PetsData = {}
+local function GetEquippedPetNames()
+    local petData = {}
+    
+    local success, result = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        local inventoryFrame = player.PlayerGui.ScreenGui.Inventory.Frame
+        
+        -- Check if the Inventory frame is visible
+        if not inventoryFrame.Visible then
+            -- Try to make it visible or return current data
+            return _G.PetsData
+        end
+        
+        local list = inventoryFrame.Inner.Pets.Main.ScrollingFrame.Team.Main.List
+        
+        for _, petFrame in ipairs(list:GetChildren()) do
+            if petFrame:IsA("Frame") and petFrame.Name ~= "UIListLayout" then
+                -- Get the UUID (original name with team suffix removed)
+                local petUUID = petFrame.Name:gsub("-team%-?%d*", "")
+                
+                -- Try to get the display name from the UI
+                local displayName = "Unknown Pet"
+                local rarity = "Common" -- Default rarity
+                local level = "1" -- Default level
+                
+                -- Use pcall to safely attempt to access the display name and other data
+                pcall(function()
+                    if petFrame.Inner.Button.Inner.DisplayName then
+                        displayName = petFrame.Inner.Button.Inner.DisplayName.Text
+                    end
+                    
+                    -- Try to get rarity if available
+                    if petFrame.Inner.Button.Inner.Rarity then
+                        rarity = petFrame.Inner.Button.Inner.Rarity.Text
+                    end
+                    
+                    -- Try to get level if available
+                    if petFrame.Inner.Button.Inner.Level then
+                        level = petFrame.Inner.Button.Inner.Level.Text:match("Lv. (%d+)") or "1"
+                    end
+                end)
+                
+                -- Create a formatted display text
+                local displayText = string.format("%s", displayName)
+                
+                -- Store the pet data
+                table.insert(petData, {
+                    uuid = petUUID,
+                    name = displayName,
+                    rarity = rarity,
+                    level = level,
+                    displayText = displayText
+                })
+            end
+        end
+        
+        return petData
+    end)
+    
+    if not success then
+        warn("Failed to get equipped pets:", result)
+        return _G.PetsData -- Return existing data on error
+    end
+    
+    -- If no pets were found but we have existing data, return that
+    if #result == 0 and #_G.PetsData > 0 then
+        return _G.PetsData
+    elseif #result == 0 then
+        return {
+            {uuid = "none", name = "No pets equipped", displayText = "No pets equipped"}
+        }
+    end
+    
+    -- Update the global pet data
+    _G.PetsData = result
+    
+    return result
+end
+local function InitializePetDropdown()
+    local petsData = GetEquippedPetNames()
+    
+    local petDisplayOptions = {}
+    for _, pet in ipairs(petsData) do
+        table.insert(petDisplayOptions, pet.displayText)
+    end
+    
+    return petDisplayOptions
+end
+local petOptions = InitializePetDropdown()
+TriggerSection:AddDropdown("Pet (Equipped in order)", petOptions, petOptions[1] or "", function(selected)
+    -- Find the selected pet's data
+    local selectedPetData = nil
+    for _, pet in ipairs(_G.PetsData) do
+        if pet.displayText == selected then
+            selectedPetData = pet
+            break
+        end
+    end
+    
+    -- Store the complete pet data
+    if selectedPetData then
+        selectedStates.pet = selectedPetData
+    else
+        selectedStates.pet = { displayText = selected, uuid = "unknown" }
+    end
 end)
 
 -- Optimize Tab Sections
