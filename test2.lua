@@ -18,9 +18,8 @@ local toggleStates = {
 local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
     toggleStates.autoBlowEnabled = value
-    
-    if toggleStates.autoBlowEnabled then
 end)
+
 task.spawn(function()
     if toggleStates.autoBlowEnabled then
         print("test")
@@ -28,6 +27,7 @@ task.spawn(function()
         print("not test")
     end
 end)
+
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     print("Sell:", value)
 end)
