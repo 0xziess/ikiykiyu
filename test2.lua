@@ -39,7 +39,7 @@ task.spawn(function()
 end)
 
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
-    print("Sell:", value)
+    toggleStates.autoBlowEnabled = value
 end)
 task.spawn(function()
     while _G.UIRunning do
@@ -52,7 +52,7 @@ task.spawn(function()
 end)
 
 AimbotSection:AddToggle("Auto Collect", false, function(value)
-    print("Sell:", value)
+    toggleStates.autoCollectEnabled = value
 end)
 
 -- Enchanting Tab Sections
