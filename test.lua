@@ -507,38 +507,29 @@ SectionPadding.Parent = SectionContent
                 DropdownCorner.CornerRadius = UDim.new(0, 4)
                 DropdownCorner.Parent = DropdownContainer
                 
-                 local DropdownLabel = Instance.new("TextLabel")
-                 DropdownLabel.Name = "Label"
-                 DropdownLabel.Size = UDim2.new(1, -20, 0, config.elementHeight)
-                 DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
-                 DropdownLabel.BackgroundTransparency = 1
-                 DropdownLabel.Text = dropdownText
-                 DropdownLabel.TextColor3 = config.textColor
-                 DropdownLabel.Font = Enum.Font[config.fontFamily]
-                 DropdownLabel.TextSize = 16
-                 DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-                 DropdownLabel.Parent = DropdownContainer
+                local DropdownLabel = Instance.new("TextLabel")
+                DropdownLabel.Name = "Label"
+                DropdownLabel.Size = UDim2.new(1, -20, 0, config.elementHeight)
+                DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+                DropdownLabel.BackgroundTransparency = 1
+                DropdownLabel.Text = dropdownText
+                DropdownLabel.TextColor3 = config.textColor
+                DropdownLabel.Font = Enum.Font[config.fontFamily]
+                DropdownLabel.TextSize = 16
+                DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+                DropdownLabel.Parent = DropdownContainer
                 
--- Create a container for the selected value and arrow to better control their layout
-local RightSideContainer = Instance.new("Frame")
-RightSideContainer.Name = "RightSide"
-RightSideContainer.Size = UDim2.new(0, 130, 1, 0) -- Fixed width for the right side
-RightSideContainer.Position = UDim2.new(0.2, -130, 0, 0) -- Position from the right
-RightSideContainer.BackgroundTransparency = 1
-RightSideContainer.Parent = DropdownContainer
-
--- Selected value label
-local SelectedLabel = Instance.new("TextLabel")
-SelectedLabel.Name = "Selected"
-SelectedLabel.Size = UDim2.new(0, 100, 1, 0) -- Fixed width
-SelectedLabel.Position = UDim2.new(0, 0, 0, 0) -- Left side of the container
-SelectedLabel.BackgroundTransparency = 1
-SelectedLabel.Text = default or options[1] or "Select"
-SelectedLabel.TextColor3 = config.accentColor
-SelectedLabel.Font = Enum.Font[config.fontFamily]
-SelectedLabel.TextSize = 16
-SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
-SelectedLabel.Parent = RightSideContainer
+                local SelectedLabel = Instance.new("TextLabel")
+                SelectedLabel.Name = "Selected"
+                SelectedLabel.Size = UDim2.new(0, 100, 0, config.elementHeight)
+                SelectedLabel.Position = UDim2.new(1, -110, 0, 0)
+                SelectedLabel.BackgroundTransparency = 1
+                SelectedLabel.Text = default or options[1] or "Select"
+                SelectedLabel.TextColor3 = config.accentColor
+                SelectedLabel.Font = Enum.Font[config.fontFamily]
+                SelectedLabel.TextSize = 16
+                SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
+                SelectedLabel.Parent = DropdownContainer
                 
                 local DropdownArrow = Instance.new("TextLabel")
                 DropdownArrow.Name = "Arrow"
