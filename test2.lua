@@ -7,7 +7,7 @@ local CombatTab = Window:AddTab("Farming")
 local VisualsTab = Window:AddTab("Rifts")
 local MiscTab = Window:AddTab("Settings")
 
--- Combat Tab Sections
+-- Auto Farm Tab Sections
 local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
     print("Blow:", value)
@@ -19,12 +19,7 @@ AimbotSection:AddToggle("Auto Collect", false, function(value)
     print("Sell:", value)
 end)
 
--- Combat Tab Sections
-local OptimizeSection = CombatTab:AddSection("Optimization")
-AimbotSection:AddToggle("Disable 3D Rendering", false, function(value)
-    print("3D:", value)
-end)
-
+-- Enchanting Tab Sections
 local TriggerSection = CombatTab:AddSection("Enchanting")
 TriggerSection:AddToggle("Auto Enchant", false, function(value)
     print("Trigger Bot:", value)
@@ -34,6 +29,12 @@ TriggerSection:AddDropdown("Enchant", {"high roll", "teamup1", "test3"}, "", fun
 end)
 TriggerSection:AddDropdown("Pet (Equipped in order)", {"pet1", "pet2", "pet3"}, "", function(selected)
     print("pet:", selected)
+end)
+
+-- Optimize Tab Sections
+local OptimizeSection = CombatTab:AddSection("Optimization")
+OptimizeSection:AddToggle("Disable 3D Rendering", false, function(value)
+    print("3D:", value)
 end)
 
 -- Visuals Tab Sections
