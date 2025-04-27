@@ -37,14 +37,12 @@ local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
     toggleStates.autoBlowEnabled = value
 end)
-task.spawn(function()
-    while _G.UIRunning do
-        if toggleStates.autoBlowEnabled then
-            Remote:FireServer("BlowBubble")
-        end
-        task.wait(0.01)
+
+Window:CreateTask(function()
+    if toggleStates.autoBlowEnabled then
+        Remote:FireServer("BlowBubble")
     end
-end)
+end, 0.01)
 
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     toggleStates.autoSellEnabled = value

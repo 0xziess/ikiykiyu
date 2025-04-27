@@ -16,6 +16,10 @@ local config = {
 -- Create the main UI container
 function UILibrary:CreateWindow(title)
     _G.UIRunning = true
+    _G.UITasks = _G.UITasks or {}
+    local uiId = tostring(tick()) .. "_" .. (title or "UI")
+    _G.UITasks[uiId] = {}
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "ExploitUI"
     ScreenGui.ResetOnSpawn = false
@@ -170,9 +174,41 @@ function UILibrary:CreateWindow(title)
         Tabs = {},
         ActiveTab = nil,
         GUI = ScreenGui,
+        Id = uiId,
+        TaskRegistry = _G.UITasks[uiId]
     }
 
-    -- Add the Unload function
+    function Window:RegisterTask(taskId, taskInfo)
+        self.TaskRegistry[taskId] = taskInfo
+        return taskId
+    end
+    
+    function Window:CreateTask(callback, interval)
+        local taskId = tostring(tick()) .. "_task"
+        
+        -- Store task info
+        self:RegisterTask(taskId, {
+            active = true,
+            interval = interval or 0.1
+        })
+        
+        -- Spawn the task with proper lifecycle management
+        task.spawn(function()
+            while _G.UIRunning and self.TaskRegistry[taskId] and self.TaskRegistry[taskId].active do
+                -- Execute the callback in protected mode
+                local success, err = pcall(callback)
+                if not success then
+                    warn("Task error in " .. taskId .. ": " .. tostring(err))
+                end
+                
+                -- Wait for the specified interval
+                task.wait(self.TaskRegistry[taskId].interval)
+            end
+        end)
+        
+        return taskId
+    end
+
     function Window:Unload()
         _G.UIRunning = false
         if toggleStates then
@@ -180,8 +216,15 @@ function UILibrary:CreateWindow(title)
                 toggleStates[key] = false
             end
         end
+        for taskId, taskInfo in pairs(self.TaskRegistry) do
+            taskInfo.active = false
+        end
+        _G.UITasks[self.Id] = nil
         if self.GUI and self.GUI.Parent then
             self.GUI:Destroy()
+        end
+        if collectgarbage then
+            collectgarbage("collect")
         end
     end
 
