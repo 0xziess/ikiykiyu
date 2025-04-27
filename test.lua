@@ -113,19 +113,21 @@ function UILibrary:CreateWindow(title)
     TabPagesContainer.BackgroundTransparency = 1
     TabPagesContainer.Parent = ContentFrame
     
-    -- Window object
-    local Window = {}
-    Window.Tabs = {}
-    Window.ActiveTab = nil
+    -- Define the Window object
+local Window = {
+    Tabs = {},
+    ActiveTab = nil
+}
 
-    function Window:Unload()
-    -- Simply destroy the ScreenGui
+-- Add the Unload function
+function Window:Unload()
     if ScreenGui and ScreenGui.Parent then
         ScreenGui:Destroy()
     end
 end
 
-    CloseButton.MouseButton1Click:Connect(function()
+-- Now connect the CloseButton event AFTER the Window object is fully defined
+CloseButton.MouseButton1Click:Connect(function()
     Window:Unload()
 end)
     
