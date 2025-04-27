@@ -133,10 +133,10 @@ TriggerSection:AddToggle("Auto Enchant", false, function(value)
 end)
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 TriggerSection:AddDropdown("Enchant", enchantOptions, "", function(selected)
-    selectedStates.enchant
+    selectedStates.enchant = selected
 end)
 TriggerSection:AddDropdown("Pet (Equipped in order)", {"pet1", "pet2", "pet3"}, "", function(selected)
-    selectedStates.pet
+    selectedStates.pet = selected
 end)
 
 -- Optimize Tab Sections
