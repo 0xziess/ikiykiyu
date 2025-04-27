@@ -113,16 +113,17 @@ function UILibrary:CreateWindow(title)
     TabPagesContainer.BackgroundTransparency = 1
     TabPagesContainer.Parent = ContentFrame
     
-    -- Define the Window object
+-- Define the Window object
 local Window = {
     Tabs = {},
-    ActiveTab = nil
+    ActiveTab = nil,
+    GUI = ScreenGui -- Store a reference to the ScreenGui
 }
 
 -- Add the Unload function
 function Window:Unload()
-    if ScreenGui and ScreenGui.Parent then
-        ScreenGui:Destroy()
+    if self.GUI and self.GUI.Parent then
+        self.GUI:Destroy()
     end
 end
 
