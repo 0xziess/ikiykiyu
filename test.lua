@@ -37,7 +37,7 @@ function UILibrary:CreateWindow(title)
     MainFrame.BackgroundColor3 = config.mainColor
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
-    MainFrame.Draggable = true
+    MainFrame.Draggable = false -- Disable default dragging
     MainFrame.Parent = ScreenGui
     
     -- Apply corner radius
@@ -233,7 +233,7 @@ end)
             -- Section content layout
             local SectionLayout = Instance.new("UIListLayout")
             SectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            SectionLayout.Padding = UDim.new(0, 8)
+            SectionLayout.Padding = UDim.new(4, 8)
             SectionLayout.Parent = SectionContent
             
             -- Add button to the section
