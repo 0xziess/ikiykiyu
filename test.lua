@@ -520,16 +520,16 @@ SectionPadding.Parent = SectionContent
                 DropdownLabel.Parent = DropdownContainer
                 
                 local SelectedLabel = Instance.new("TextLabel")
-                 SelectedLabel.Name = "Selected"
-                 SelectedLabel.Size = UDim2.new(0, 100, 0, config.elementHeight)
-                 SelectedLabel.Position = UDim2.new(0, -110, 0, 0)
-                 SelectedLabel.BackgroundTransparency = 1
-                 SelectedLabel.Text = default or options[1] or "Select"
-                 SelectedLabel.TextColor3 = config.accentColor
-                 SelectedLabel.Font = Enum.Font[config.fontFamily]
-                 SelectedLabel.TextSize = 16
-                 SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
-                 SelectedLabel.Parent = DropdownContainer
+                SelectedLabel.Name = "Selected"
+                SelectedLabel.Size = UDim2.new(0, 100, 0, config.elementHeight)
+                SelectedLabel.Position = UDim2.new(1, -150, 0, 0) -- Fixed position to avoid overlap
+                SelectedLabel.BackgroundTransparency = 1
+                SelectedLabel.Text = default or options[1] or "Select"
+                SelectedLabel.TextColor3 = config.accentColor
+                SelectedLabel.Font = Enum.Font[config.fontFamily]
+                SelectedLabel.TextSize = 16
+                SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
+                SelectedLabel.Parent = DropdownContainer
                 
                 local DropdownArrow = Instance.new("TextLabel")
                 DropdownArrow.Name = "Arrow"
@@ -544,10 +544,10 @@ SectionPadding.Parent = SectionContent
                 
                 local OptionContainer = Instance.new("Frame")
                 OptionContainer.Name = "Options"
-                OptionContainer.Size = UDim2.new(1, 0, 0, 0)
+                OptionContainer.Size = UDim2.new(1, 0, 0, 0) -- Initially no height
                 OptionContainer.Position = UDim2.new(0, 0, 0, config.elementHeight)
                 OptionContainer.BackgroundTransparency = 1
-                OptionContainer.ClipsDescendants = true
+                OptionContainer.ClipsDescendants = false -- Changed to false to debug
                 OptionContainer.Parent = DropdownContainer
                 
                 local OptionLayout = Instance.new("UIListLayout")
@@ -594,10 +594,14 @@ SectionPadding.Parent = SectionContent
                         isOpen = not isOpen
                         
                         if isOpen then
-                            DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight + (#options * 30)), "Out", "Quad", 0.2, true)
+                            -- Calculate the total height needed for all options
+                            local optionsHeight = #options * 30
+                            DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight + optionsHeight), "Out", "Quad", 0.2, true)
+                            OptionContainer.Size = UDim2.new(1, 0, 0, optionsHeight) -- Explicitly set the size
                             DropdownArrow.Text = "▲"
                         else
                             DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight), "Out", "Quad", 0.2, true)
+                            OptionContainer.Size = UDim2.new(1, 0, 0, 0) -- Collapse the options
                             DropdownArrow.Text = "▼"
                         end
                     end
