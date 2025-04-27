@@ -224,7 +224,7 @@ end)
             -- Section content
             local SectionContent = Instance.new("Frame")
             SectionContent.Name = "Content"
-            SectionContent.Size = UDim2.new(1, -20, 0, 0)
+            SectionContent.Size = UDim2.new(1, -25, 0, 0)
             SectionContent.Position = UDim2.new(0, 10, 0, 35)
             SectionContent.BackgroundTransparency = 1
             SectionContent.AutomaticSize = Enum.AutomaticSize.Y
@@ -233,7 +233,7 @@ end)
             -- Section content layout
             local SectionLayout = Instance.new("UIListLayout")
             SectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            SectionLayout.Padding = UDim.new(4, 8)
+            SectionLayout.Padding = UDim.new(0, 8)
             SectionLayout.Parent = SectionContent
             
             -- Add button to the section
