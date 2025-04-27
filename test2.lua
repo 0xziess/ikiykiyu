@@ -7,10 +7,26 @@ local CombatTab = Window:AddTab("Farming")
 local VisualsTab = Window:AddTab("Rifts")
 local MiscTab = Window:AddTab("Settings")
 
+local toggleStates = {
+    autoBlowEnabled = false,
+    autoSellEnabled = false,
+    autoCollectEnabled = false,
+    autoEnchantEnabled = false,
+}
+
 -- Auto Farm Tab Sections
 local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
-    print("Blow:", value)
+    toggleStates.autoBlowEnabled = value
+    
+    if toggleStates.autoBlowEnabled then
+end)
+task.spawn(function()
+    if toggleStates.autoBlowEnabled then
+        print("test")
+    else
+        print("not test")
+    end
 end)
 AimbotSection:AddToggle("Auto Sell (broken)", false, function(value)
     print("Sell:", value)
