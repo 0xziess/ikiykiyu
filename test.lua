@@ -279,6 +279,13 @@ function UILibrary:CreateWindow(title)
             SectionContent.BackgroundTransparency = 1
             SectionContent.AutomaticSize = Enum.AutomaticSize.Y
             SectionContent.Parent = SectionContainer
+
+            local SectionPadding = Instance.new("UIPadding")
+SectionPadding.PaddingTop = UDim.new(0, 0)
+SectionPadding.PaddingLeft = UDim.new(0, 0)
+SectionPadding.PaddingRight = UDim.new(0, 0)
+SectionPadding.PaddingBottom = UDim.new(0, 10) -- This creates the gap at the bottom
+SectionPadding.Parent = SectionContent
             
             -- Section content layout
             local SectionLayout = Instance.new("UIListLayout")
