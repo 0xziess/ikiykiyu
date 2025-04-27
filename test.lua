@@ -507,17 +507,18 @@ SectionPadding.Parent = SectionContent
                 DropdownCorner.CornerRadius = UDim.new(0, 4)
                 DropdownCorner.Parent = DropdownContainer
                 
-                local DropdownLabel = Instance.new("TextLabel")
-                DropdownLabel.Name = "Label"
-                DropdownLabel.Size = UDim2.new(1, -20, 0, config.elementHeight)
-                DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
-                DropdownLabel.BackgroundTransparency = 1
-                DropdownLabel.Text = dropdownText
-                DropdownLabel.TextColor3 = config.textColor
-                DropdownLabel.Font = Enum.Font[config.fontFamily]
-                DropdownLabel.TextSize = 16
-                DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-                DropdownLabel.Parent = DropdownContainer
+                -- Adjust the DropdownLabel size to leave more space for the selected value and arrow
+local DropdownLabel = Instance.new("TextLabel")
+DropdownLabel.Name = "Label"
+DropdownLabel.Size = UDim2.new(0.6, -10, 0, config.elementHeight) -- Reduced width
+DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+DropdownLabel.BackgroundTransparency = 1
+DropdownLabel.Text = dropdownText
+DropdownLabel.TextColor3 = config.textColor
+DropdownLabel.Font = Enum.Font[config.fontFamily]
+DropdownLabel.TextSize = 16
+DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+DropdownLabel.Parent = DropdownContainer
                 
                 -- Adjust the SelectedLabel position and size
 local SelectedLabel = Instance.new("TextLabel")
