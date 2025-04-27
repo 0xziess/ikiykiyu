@@ -37,8 +37,28 @@ function UILibrary:CreateWindow(title)
     MainFrame.BackgroundColor3 = config.mainColor
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
-    MainFrame.Draggable = false -- Disable default dragging
+    -- MainFrame.Draggable = true -- Removed for custom dragging
     MainFrame.Parent = ScreenGui
+    
+    -- Setup improved dragging system
+    local UserInputService = game:GetService("UserInputService")
+    local TweenService = game:GetService("TweenService")
+    local RunService = game:GetService("RunService")
+
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+    
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        local targetPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        
+        -- Create a smooth tween for the position change
+        local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Position = targetPosition})
+        tween:Play()
+    end
     
     -- Apply corner radius
     local UICorner = Instance.new("UICorner")
@@ -52,6 +72,36 @@ function UILibrary:CreateWindow(title)
     TitleBar.BackgroundColor3 = config.accentColor
     TitleBar.BorderSizePixel = 0
     TitleBar.Parent = MainFrame
+    
+    -- Connect dragging to title bar
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            -- Capture the input and stop it from propagating
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    -- Update drag when mouse moves
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    -- Connect the drag update to RunService for smoother movement
+    RunService.RenderStepped:Connect(function()
+        if dragging and dragInput then
+            updateDrag(dragInput)
+        end
+    end)
     
     local TitleCorner = Instance.new("UICorner")
     TitleCorner.CornerRadius = config.cornerRadius
@@ -113,24 +163,24 @@ function UILibrary:CreateWindow(title)
     TabPagesContainer.BackgroundTransparency = 1
     TabPagesContainer.Parent = ContentFrame
     
--- Define the Window object
-local Window = {
-    Tabs = {},
-    ActiveTab = nil,
-    GUI = ScreenGui -- Store a reference to the ScreenGui
-}
+    -- Define the Window object
+    local Window = {
+        Tabs = {},
+        ActiveTab = nil,
+        GUI = ScreenGui -- Store reference to ScreenGui for unloading
+    }
 
--- Add the Unload function
-function Window:Unload()
-    if self.GUI and self.GUI.Parent then
-        self.GUI:Destroy()
+    -- Add the Unload function
+    function Window:Unload()
+        if self.GUI and self.GUI.Parent then
+            self.GUI:Destroy()
+        end
     end
-end
 
--- Now connect the CloseButton event AFTER the Window object is fully defined
-CloseButton.MouseButton1Click:Connect(function()
-    Window:Unload()
-end)
+    -- Connect the CloseButton event
+    CloseButton.MouseButton1Click:Connect(function()
+        Window:Unload()
+    end)
     
     -- Add a tab to the window
     function Window:AddTab(tabName)
@@ -224,7 +274,7 @@ end)
             -- Section content
             local SectionContent = Instance.new("Frame")
             SectionContent.Name = "Content"
-            SectionContent.Size = UDim2.new(1, -25, 0, 0)
+            SectionContent.Size = UDim2.new(1, -20, 0, 0)
             SectionContent.Position = UDim2.new(0, 10, 0, 35)
             SectionContent.BackgroundTransparency = 1
             SectionContent.AutomaticSize = Enum.AutomaticSize.Y
