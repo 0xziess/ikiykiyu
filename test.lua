@@ -2,7 +2,7 @@ local UILibrary = {}
 
 -- Configuration
 local config = {
-    fontFamily = "Inconsolata", -- Gothic-like font
+    fontFamily = "Code", -- Gothic-like font
     mainColor = Color3.fromRGB(25, 25, 25),
     accentColor = Color3.fromRGB(120, 48, 43), -- Dark red for gothic theme
     textColor = Color3.fromRGB(255, 255, 255),
