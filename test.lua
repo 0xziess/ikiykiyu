@@ -182,19 +182,27 @@ function UILibrary:CreateWindow(title)
     -- Add the Unload function
     function Window:Unload()
         self._unloaded = true
-        for _, task in pairs(self.Tasks) do
-            if typeof(task) == "thread" and coroutine.status(task) ~= "dead" then
-                coroutine.close(task)
-            elseif typeof(task) == "RBXScriptConnection" then
-                task:Disconnect()
+        if self.Tasks then  -- Check if Tasks table exists
+            for _, task in pairs(self.Tasks) do
+                if typeof(task) == "thread" and coroutine.status(task) ~= "dead" then
+                    pcall(function() 
+                        task_cancel(task)
+                        -- coroutine.close(task)
+                    end)
+                elseif typeof(task) == "RBXScriptConnection" then
+                    pcall(function() task:Disconnect() end)
+                end
             end
+            self.Tasks = {}
         end
-        for key, _ in pairs(toggleStates) do
-            toggleStates[key] = false
+        if toggleStates then
+            for key, _ in pairs(toggleStates) do
+                toggleStates[key] = false
+            end
         end
         self.Tasks = {}
         if self.GUI and self.GUI.Parent then
-            self.GUI:Destroy()
+            pcall(function() self.GUI:Destroy() end)
         end
     end
 
