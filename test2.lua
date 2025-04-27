@@ -24,11 +24,6 @@ local toggleStates = {
     autoEnchantEnabled = false,
 }
 
-local selectedStates = {
-    enchant = {},
-    pet = {},
-}
-
 -- Auto Farm Tab Sections
 local AimbotSection = CombatTab:AddSection("Auto")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
@@ -114,9 +109,6 @@ TriggerSection:AddToggle("Auto Enchant", false, function(value)
 end)
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 
-TriggerSection:AddDropdown("Pet (Equipped in order)", {"pet1", "pet2", "pet3"}, "", function(selected)
-    selectedStates.pet
-end)
 
 -- Optimize Tab Sections
 local OptimizeSection = CombatTab:AddSection("Optimization")
