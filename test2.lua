@@ -22,7 +22,7 @@ end)
 
 -- Spawn and register the task
 Window:RegisterTask(task.spawn(function()
-    while not Window._unloaded do  -- Check if window is unloaded
+    while _G.UIRunning do
         if toggleStates.autoBlowEnabled then
             print("test")
         else

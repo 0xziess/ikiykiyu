@@ -15,6 +15,7 @@ local config = {
 
 -- Create the main UI container
 function UILibrary:CreateWindow(title)
+    _G.UIRunning = true
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "ExploitUI"
     ScreenGui.ResetOnSpawn = false
@@ -169,8 +170,6 @@ function UILibrary:CreateWindow(title)
         Tabs = {},
         ActiveTab = nil,
         GUI = ScreenGui,
-        _unloaded = false,
-        Tasks = {},
     }
 
     -- Function to register a task with the window
@@ -181,27 +180,14 @@ function UILibrary:CreateWindow(title)
 
     -- Add the Unload function
     function Window:Unload()
-        self._unloaded = true
-        if self.Tasks then  -- Check if Tasks table exists
-            for _, task in pairs(self.Tasks) do
-                if typeof(task) == "thread" and coroutine.status(task) ~= "dead" then
-                    pcall(function() 
-                        coroutine.close(task)
-                    end)
-                elseif typeof(task) == "RBXScriptConnection" then
-                    pcall(function() task:Disconnect() end)
-                end
-            end
-            self.Tasks = {}
-        end
+        _G.UIRunning = false
         if toggleStates then
             for key, _ in pairs(toggleStates) do
                 toggleStates[key] = false
             end
         end
-        self.Tasks = {}
         if self.GUI and self.GUI.Parent then
-            pcall(function() self.GUI:Destroy() end)
+            self.GUI:Destroy()
         end
     end
 
