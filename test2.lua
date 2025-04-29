@@ -339,13 +339,17 @@ local function GetEquippedPetNames()
 
     return petNames
 end
-TriggerSection:AddDropdown("Pet (Equipped in order)", GetEquippedPetNames(), "", function(selected)
+local petDropdown
+petDropdown = TriggerSection:AddDropdown("Pet (Equipped in order)", GetEquippedPetNames(), "", function(selected)
     selectedStates.pet = selected
 end)
 TriggerSection:AddButton("Refresh Pets", function()
     local updatedPets = GetEquippedPetNames()
     if petDropdown and petDropdown.Refresh then
         petDropdown:Refresh(updatedPets)
+        print("Refreshed pet dropdown with", #updatedPets, "pets")
+    else
+        print("Could not refresh pet dropdown - reference not available")
     end
 end)
 
