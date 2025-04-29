@@ -1,6 +1,6 @@
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/0xziess/ikiykiyu/refs/heads/main/test.lua"))()
 
-local Window = UILibrary:CreateWindow("infinity.")
+local Window = UILibrary:CreateWindow("infinity ui")
 
 -- Create tabs
 local CombatTab = Window:AddTab("Farming")
@@ -22,7 +22,10 @@ local toggleStates = {
     autoSellEnabled = false,
     autoCollectEnabled = false,
     autoEnchantEnabled = false,
+    autocollectseason = false,
     rendering = false,
+    disableparticles = false,
+    lowgp = false,
     autorift = false,
 }
 local selectedStates = {
@@ -40,7 +43,7 @@ local slider = {
 }
 
 -- Auto Farm Tab Sections
-local AimbotSection = CombatTab:AddSection("Auto")
+local AimbotSection = CombatTab:AddSection("Auto Farming")
 AimbotSection:AddToggle("Auto Blow", false, function(value)
     toggleStates.autoBlowEnabled = value
 end)
@@ -123,6 +126,22 @@ Window:CreateTask(function()
     end
 end, 0.01)
 
+AimbotSection:AddToggle("Auto Collect Season", false, function(value)
+    toggleStates.autocollectseason = value
+end)
+local function collectseasonpass()
+    local args = {
+        [1] = "ClaimSeason"
+    }
+
+    game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Event:FireServer(unpack(args))
+end
+Window:CreateTask(function()
+    if toggleStates.autocollectseason then
+        collectseasonpass()
+    end
+end, 0.01)
+
 -- Enchanting Tab Sections
 local TriggerSection = CombatTab:AddSection("Enchanting")
 
@@ -148,26 +167,27 @@ TriggerSection:AddToggle("Auto Enchant", false, function(value)
         ResetEnchant()
     end
 end)
-local ENCHANT_COOLDOWN = 0.01
+-- Function to clean enchant names
 local function CleanEnchantName(name)
     if type(name) ~= "string" then
         warn("CleanEnchantName received non-string input:", name, type(name))
         return ""
     end
-
-    -- Remove non-alphanumeric characters
     return name:gsub("[^%w%s]", "")
 end
+
+-- Function to trim whitespace
 local function TrimWhitespace(str)
     return str:match("^%s*(.-)%s*$")
 end
-local function GetCurrentEnchants(petName)
+
+-- Function to get current enchants (directly accessing UI elements)
+local function GetCurrentEnchants(petUUID)
     local success, result = pcall(function()
-        -- Path to the pet's enchant titles
+        -- Direct path to enchant titles - no need to open inventory or pet details
         local enchantTitle1 = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame.Inner.Pets.Details.Enchants["Enchant1"].Title
         local enchantTitle2 = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.Inventory.Frame.Inner.Pets.Details.Enchants["Enchant2"].Title
 
-        -- Return both enchant title texts in a table
         return {
             enchantTitle1.Text,
             enchantTitle2.Text
@@ -175,63 +195,55 @@ local function GetCurrentEnchants(petName)
     end)
 
     if not success then
-        warn("Failed to get current enchants for pet:", petName, result)
+        warn("Failed to get current enchants for pet:", petUUID, result)
         return {}
     end
 
     return result
 end
+
+-- Improved auto enchant logic based on your working version
 local function autoEnchantLogic()
     -- Check if pet is selected
-    if not selectedStates.pet or selectedStates.pet == "unknown" then
+    if not selectedStates.pet or selectedStates.pet == "" then
         print("No pet selected for enchanting.")
         return false
     end
     
-    -- Check if enchants are selected (now handling both single string and array)
-    local desiredEnchants = {}
-    
-    -- Handle different possible formats of selectedStates.enchants
-    if selectedStates.enchants then
-        -- If it's already an array from multi-dropdown
-        if type(selectedStates.enchants) == "table" then
-            desiredEnchants = selectedStates.enchants
+    -- Get desired enchants from multi-dropdown
+    local desiredEnchants = selectedStatesMulti.enchants
+    if not desiredEnchants or #desiredEnchants == 0 then
+        -- Fallback to single dropdown if multi is empty
+        if selectedStates.enchant and selectedStates.enchant ~= "" then
+            desiredEnchants = {selectedStates.enchant}
         else
-            -- If it's a single string
-            table.insert(desiredEnchants, selectedStates.enchants)
-        end
-    elseif selectedStates.enchant then
-        -- For backward compatibility with old single-select dropdown
-        if type(selectedStates.enchant) == "table" then
-            desiredEnchants = selectedStates.enchant
-        else
-            table.insert(desiredEnchants, selectedStates.enchant)
+            print("No desired enchants selected.")
+            return false
         end
     end
     
-    -- Ensure we have at least one enchant selected
-    if #desiredEnchants == 0 then
-        print("No desired enchants selected.")
-        return false
+    -- Debug output
+    print("Selected pet:", selectedStates.pet)
+    print("Desired enchants:")
+    for _, enchant in ipairs(desiredEnchants) do
+        print("  -", enchant)
     end
     
-    -- Get the pet UUID
+    -- Get current enchants
     local petUUID = selectedStates.pet
-    
-    -- Get current enchants for the pet
     local currentEnchants = GetCurrentEnchants(petUUID)
     
     if #currentEnchants > 0 then
+        print("Current enchants:")
         for i, enchant in ipairs(currentEnchants) do
+            print("  Slot", i, ":", enchant)
         end
         
-        -- Check if any of the desired enchants are already present
+        -- Check for matches
         local matchFound = false
-        local matchedEnchant = ""
         
-        -- For each current enchant on the pet
         for _, currentEnchant in ipairs(currentEnchants) do
-            -- Skip empty or nil enchants
+            -- Skip empty enchants
             if not currentEnchant or currentEnchant == "" or currentEnchant == "NIL" then
                 continue
             end
@@ -239,14 +251,15 @@ local function autoEnchantLogic()
             local cleanedCurrentEnchant = CleanEnchantName(currentEnchant)
             local trimmedCurrentEnchant = TrimWhitespace(cleanedCurrentEnchant):lower()
             
-            -- Check against each desired enchant
             for _, desiredEnchant in ipairs(desiredEnchants) do
                 local cleanedDesiredEnchant = CleanEnchantName(desiredEnchant)
                 local trimmedDesiredEnchant = TrimWhitespace(cleanedDesiredEnchant):lower()
                 
+                print("Comparing:", trimmedCurrentEnchant, "with:", trimmedDesiredEnchant)
+                
                 if trimmedCurrentEnchant == trimmedDesiredEnchant then
+                    print("Desired enchant already obtained:", desiredEnchant)
                     matchFound = true
-                    matchedEnchant = desiredEnchant
                     break
                 end
             end
@@ -256,21 +269,24 @@ local function autoEnchantLogic()
             end
         end
         
-        -- If none of the desired enchants are found, reroll
+        -- Reroll if no match found
         if not matchFound then
+            print("No desired enchants found, rerolling for pet:", petUUID)
             
             local args = {
                 "RerollEnchants",
                 petUUID
             }
-
-            -- Use pcall to handle potential errors
+            
+            -- Call the remote function
             local success, result = pcall(function()
                 return game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Function:InvokeServer(unpack(args))
             end)
             
             if not success then
                 warn("Error rerolling enchants:", result)
+            else
+                print("Successfully rerolled enchants")
             end
             
             return true
@@ -278,7 +294,7 @@ local function autoEnchantLogic()
             return false
         end
     else
-        print("Failed to get current enchants for pet")
+        print("Failed to get current enchants for pet:", petUUID)
         return false
     end
 end
@@ -289,11 +305,11 @@ Window:CreateTask(function()
             warn("Error in auto enchant logic:", result)
         end
     end
-end, 1) -- Check every second
+end, 0.01) -- Check every second
 
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 TriggerSection:AddMultiDropdown("Enchants", enchantOptions, {}, function(selectedEnchants)
-    selectedStatesMulti.enchants = selected
+    selectedStatesMulti.enchants = selectedEnchants
 end)
 
 local function GetEquippedPetNames()
@@ -337,6 +353,182 @@ OptimizeSection:AddToggle("Disable 3D Rendering", false, function(value)
 
     GPURenderingToggle(value)
 end)
+OptimizeSection:AddToggle("Low Graphics Mode", false, function(value)
+    toggleStates.lowgp = value
+    
+    if value then
+        -- Save current graphics settings before changing them
+        local UserSettings = UserSettings()
+        local GameSettings = UserSettings.GameSettings
+        
+        -- Store original quality level
+        toggleStates.savedGraphicsQuality = settings().Rendering.QualityLevel
+        
+        -- Store original lighting effects states
+        local lighting = game:GetService("Lighting")
+        toggleStates.savedLightingProperties = {
+            Brightness = lighting.Brightness,
+            GlobalShadows = lighting.GlobalShadows,
+            Technology = lighting.Technology,
+            EnvironmentDiffuseScale = lighting.EnvironmentDiffuseScale,
+            EnvironmentSpecularScale = lighting.EnvironmentSpecularScale
+        }
+        
+        -- Store post-processing effects states
+        if lighting:FindFirstChild("Bloom") then
+            toggleStates.savedBloom = lighting.Bloom.Enabled
+        end
+        
+        if lighting:FindFirstChild("Blur") then
+            toggleStates.savedBlur = lighting.Blur.Enabled
+        end
+        
+        if lighting:FindFirstChild("SunRays") then
+            toggleStates.savedSunRays = lighting.SunRays.Enabled
+        end
+        
+        if lighting:FindFirstChild("ColorCorrection") then
+            toggleStates.savedColorCorrection = lighting.ColorCorrection.Enabled
+        end
+        
+        if lighting:FindFirstChild("DepthOfField") then
+            toggleStates.savedDepthOfField = lighting.DepthOfField.Enabled
+        end
+        
+        -- Store terrain settings
+        if workspace:FindFirstChild("Terrain") then
+            toggleStates.savedTerrainProperties = {
+                WaterReflectance = workspace.Terrain.WaterReflectance,
+                WaterTransparency = workspace.Terrain.WaterTransparency,
+                WaterWaveSize = workspace.Terrain.WaterWaveSize,
+                WaterWaveSpeed = workspace.Terrain.WaterWaveSpeed
+            }
+        end
+        
+        -- Apply low graphics settings
+        settings().Rendering.QualityLevel = 1
+        
+        -- Reduce lighting quality
+        lighting.Brightness = lighting.Brightness * 0.8
+        lighting.GlobalShadows = false
+        lighting.Technology = Enum.Technology.Compatibility
+        lighting.EnvironmentDiffuseScale = 0
+        lighting.EnvironmentSpecularScale = 0
+        
+        -- Disable post-processing effects
+        if lighting:FindFirstChild("Bloom") then
+            lighting.Bloom.Enabled = false
+        end
+        
+        if lighting:FindFirstChild("Blur") then
+            lighting.Blur.Enabled = false
+        end
+        
+        if lighting:FindFirstChild("SunRays") then
+            lighting.SunRays.Enabled = false
+        end
+        
+        if lighting:FindFirstChild("ColorCorrection") then
+            lighting.ColorCorrection.Enabled = false
+        end
+        
+        if lighting:FindFirstChild("DepthOfField") then
+            lighting.DepthOfField.Enabled = false
+        end
+        
+        -- Reduce terrain quality
+        if workspace:FindFirstChild("Terrain") then
+            workspace.Terrain.WaterReflectance = 0
+            workspace.Terrain.WaterTransparency = 1
+            workspace.Terrain.WaterWaveSize = 0
+            workspace.Terrain.WaterWaveSpeed = 0
+        end
+        
+        -- Reduce other rendering features
+        settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level04
+        settings().Rendering.EagerBulkExecution = false
+        settings().Rendering.QualityLevel = 1
+        settings().Rendering.ReloadAssets = false
+        
+        print("Low Graphics Mode enabled - original settings saved")
+    else
+        -- Restore all saved settings
+        if toggleStates.savedGraphicsQuality then
+            settings().Rendering.QualityLevel = toggleStates.savedGraphicsQuality
+        end
+        
+        -- Restore lighting properties
+        local lighting = game:GetService("Lighting")
+        if toggleStates.savedLightingProperties then
+            for property, value in pairs(toggleStates.savedLightingProperties) do
+                pcall(function()
+                    lighting[property] = value
+                end)
+            end
+        end
+        
+        -- Restore post-processing effects
+        if toggleStates.savedBloom ~= nil and lighting:FindFirstChild("Bloom") then
+            lighting.Bloom.Enabled = toggleStates.savedBloom
+        end
+        
+        if toggleStates.savedBlur ~= nil and lighting:FindFirstChild("Blur") then
+            lighting.Blur.Enabled = toggleStates.savedBlur
+        end
+        
+        if toggleStates.savedSunRays ~= nil and lighting:FindFirstChild("SunRays") then
+            lighting.SunRays.Enabled = toggleStates.savedSunRays
+        end
+        
+        if toggleStates.savedColorCorrection ~= nil and lighting:FindFirstChild("ColorCorrection") then
+            lighting.ColorCorrection.Enabled = toggleStates.savedColorCorrection
+        end
+        
+        if toggleStates.savedDepthOfField ~= nil and lighting:FindFirstChild("DepthOfField") then
+            lighting.DepthOfField.Enabled = toggleStates.savedDepthOfField
+        end
+        
+        -- Restore terrain settings
+        if toggleStates.savedTerrainProperties and workspace:FindFirstChild("Terrain") then
+            for property, value in pairs(toggleStates.savedTerrainProperties) do
+                pcall(function()
+                    workspace.Terrain[property] = value
+                end)
+            end
+        end
+        
+        -- Restore other rendering features to defaults
+        settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level01
+        settings().Rendering.EagerBulkExecution = true
+        settings().Rendering.ReloadAssets = true
+        
+        print("Low Graphics Mode disabled - original settings restored")
+    end
+end)
+OptimizeSection:AddToggle("Disable Particles", false, function(value)
+    toggleStates.disableparticles = value
+    
+    local function processParticles(parent)
+        for _, child in ipairs(parent:GetChildren()) do
+            if child:IsA("ParticleEmitter") or child:IsA("Smoke") or child:IsA("Fire") or child:IsA("Sparkles") then
+                child.Enabled = not value
+            end
+            processParticles(child)
+        end
+    end
+    processParticles(workspace)
+    if value and not toggleStates.particleConnection then
+        toggleStates.particleConnection = workspace.DescendantAdded:Connect(function(descendant)
+            if descendant:IsA("ParticleEmitter") or descendant:IsA("Smoke") or descendant:IsA("Fire") or descendant:IsA("Sparkles") then
+                task.wait() -- Wait a frame to ensure it's fully added
+                descendant.Enabled = false
+            end
+        end)
+    elseif not value and toggleStates.particleConnection then
+        toggleStates.particleConnection:Disconnect()
+        toggleStates.particleConnection = nil
+    end
+end)
 
 -- Visuals Tab Sections
 local ESPSection = VisualsTab:AddSection("Rift")
@@ -359,7 +551,8 @@ local EggPositions = {
     ["Infinity Egg"] = Vector3.new(-99.70166015625, 8.598015785217285, -26.829652786254883),
     ["Nightmare Egg"] = Vector3.new(-18.746173858642578, 10148.1611328125, 186.91860961914062),
 	["Void Egg"] = Vector3.new(4.745765209197998, 10148.1025390625, 187.00119018554688),
-    ["Rainbow Egg"] = Vector3.new(-36.07754135131836, 15972.72265625, 45.21904754638672)
+    ["Rainbow Egg"] = Vector3.new(-36.07754135131836, 15972.72265625, 45.21904754638672),
+    ["100M Egg"] = Vector3.new(16.167966842651367, 9.530410766601562, -3.9539427757263184),
 }
 local RiftToEggMap = {
     ["void-egg"] = "Void Egg",
@@ -535,7 +728,7 @@ Window:CreateTask(function()
     end
 end, 0.1)
 
-local FallbackEggOptions = {"Nightmare Egg", "Rainbow Egg", "Void Egg", "Common Egg", "Infinity Egg"}
+local FallbackEggOptions = {"Nightmare Egg", "Rainbow Egg", "Void Egg", "Common Egg", "Infinity Egg", "100M Egg"}
 ESPSection:AddDropdown("Fallback Egg", FallbackEggOptions, "", function(selected)
     selectedStates.fallbackEgg = selected
 end)
@@ -566,4 +759,12 @@ SettingsSection:AddTextbox("Custom Name", "", "Enter name...", function(text)
 end)
 SettingsSection:AddToggle("Auto-Execute", false, function(value)
     print("Auto-Execute:", value)
+end)
+
+local configsect = MiscTab:AddSection("Config Management")
+configsect:AddDropdown("Config name", {}, "", function(text)
+end)
+configsect:AddButton("Save", function()
+end)
+configsect:AddButton("Load", function()
 end)
