@@ -677,6 +677,13 @@ SectionPadding.Parent = SectionContent
                 DropdownCorner.CornerRadius = UDim.new(0, 4)
                 DropdownCorner.Parent = DropdownContainer
                 
+                -- Create a header area for the dropdown
+                local DropdownHeader = Instance.new("Frame")
+                DropdownHeader.Name = "Header"
+                DropdownHeader.Size = UDim2.new(1, 0, 0, config.elementHeight)
+                DropdownHeader.BackgroundTransparency = 1
+                DropdownHeader.Parent = DropdownContainer
+                
                 -- Add label
                 local DropdownLabel = Instance.new("TextLabel")
                 DropdownLabel.Name = "Label"
@@ -688,7 +695,7 @@ SectionPadding.Parent = SectionContent
                 DropdownLabel.Font = Enum.Font[config.fontFamily]
                 DropdownLabel.TextSize = 16
                 DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-                DropdownLabel.Parent = DropdownContainer
+                DropdownLabel.Parent = DropdownHeader
                 
                 -- Selected items display
                 local SelectedLabel = Instance.new("TextLabel")
@@ -700,7 +707,7 @@ SectionPadding.Parent = SectionContent
                 SelectedLabel.Font = Enum.Font[config.fontFamily]
                 SelectedLabel.TextSize = 16
                 SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
-                SelectedLabel.Parent = DropdownContainer
+                SelectedLabel.Parent = DropdownHeader
                 
                 -- Dropdown arrow
                 local DropdownArrow = Instance.new("TextLabel")
@@ -712,7 +719,7 @@ SectionPadding.Parent = SectionContent
                 DropdownArrow.TextColor3 = config.textColor
                 DropdownArrow.Font = Enum.Font[config.fontFamily]
                 DropdownArrow.TextSize = 14
-                DropdownArrow.Parent = DropdownContainer
+                DropdownArrow.Parent = DropdownHeader
                 
                 -- Options container
                 local OptionContainer = Instance.new("Frame")
@@ -845,8 +852,8 @@ SectionPadding.Parent = SectionContent
                     end)
                 end
                 
-                -- Toggle dropdown visibility
-                DropdownContainer.InputBegan:Connect(function(input)
+                -- Toggle dropdown visibility when clicking on the header
+                DropdownHeader.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         isOpen = not isOpen
                         
