@@ -299,7 +299,7 @@ Window:CreateTask(function()
 end, 1) -- Check every second
 
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
-TriggerSection:AddDropdown("Enchant", enchantOptions, "", function(selected)
+TriggerSection:AddMultiDropdown("Enchants", enchantOptions, {"Team Up II"}, function(selectedEnchants)
     selectedStatesMulti.enchants = selected
 end)
 
@@ -353,14 +353,14 @@ local FallbackEggOptions = {"Nightmare Egg", "Rainbow Egg", "Void Egg", "Common 
 ESPSection:AddDropdown("Fallback Egg", FallbackEggOptions, "", function(selected)
 end)
 local RiftOptions = {"nightmare-egg", "rainbow-egg", "void-egg"}
-ESPSection:AddMultiDropdown("Rifts", RiftOptions, "", function(selected)
+ESPSection:AddMultiDropdown("Rifts", RiftOptions, {}, function(selected)
     selectedStatesMulti.rifts = selected
 end)
 local RiftLuckOptions = {"x5", "x10", "x25"}
-ESPSection:AddMultiDropdown("Rift's luck", RiftLuckOptions, "", function(selected)
+ESPSection:AddMultiDropdown("Rift's luck", RiftLuckOptions, {}, function(selected)
     selectedStatesMulti.riftsLuck = selected
 end)
-ESPSection:AddSlider("Egg Amount", 1, 6, 5, function(value)
+ESPSection:AddSlider("Egg Amount", 1, 6, 6, function(value)
 end)
 
 -- Misc Tab Sections
