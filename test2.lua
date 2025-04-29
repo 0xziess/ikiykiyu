@@ -23,6 +23,7 @@ local toggleStates = {
     autoCollectEnabled = false,
     autoEnchantEnabled = false,
     rendering = false,
+    autorift = false,
 }
 local selectedStates = {
     enchant = "",
@@ -33,6 +34,9 @@ local selectedStatesMulti = {
     enchants = {},
     rifts = {},
     riftsLuck = {}
+}
+local slider = {
+    eggquan = "",
 }
 
 -- Auto Farm Tab Sections
@@ -108,7 +112,6 @@ local function collectItems()
                 end
             end
         else
-            print("Could not identify the correct Chunker folder for collectibles.")
         end
     else
         print("workspace.Rendered NOT found.")
@@ -215,16 +218,11 @@ local function autoEnchantLogic()
     -- Get the pet UUID
     local petUUID = selectedStates.pet
     
-    print("Checking enchants for pet UUID:", petUUID)
-    print("Desired enchants:", table.concat(desiredEnchants, ", "))
-    
     -- Get current enchants for the pet
     local currentEnchants = GetCurrentEnchants(petUUID)
     
     if #currentEnchants > 0 then
-        print("Current enchants for pet:")
         for i, enchant in ipairs(currentEnchants) do
-            print("  Slot", i, ":", enchant)
         end
         
         -- Check if any of the desired enchants are already present
@@ -246,10 +244,7 @@ local function autoEnchantLogic()
                 local cleanedDesiredEnchant = CleanEnchantName(desiredEnchant)
                 local trimmedDesiredEnchant = TrimWhitespace(cleanedDesiredEnchant):lower()
                 
-                print("Comparing:", trimmedCurrentEnchant, "with:", trimmedDesiredEnchant)
-                
                 if trimmedCurrentEnchant == trimmedDesiredEnchant then
-                    print("Desired enchant already obtained:", desiredEnchant)
                     matchFound = true
                     matchedEnchant = desiredEnchant
                     break
@@ -263,7 +258,6 @@ local function autoEnchantLogic()
         
         -- If none of the desired enchants are found, reroll
         if not matchFound then
-            print("None of the desired enchants found, rerolling...")
             
             local args = {
                 "RerollEnchants",
@@ -281,7 +275,6 @@ local function autoEnchantLogic()
             
             return true
         else
-            print("Pet already has desired enchant:", matchedEnchant)
             return false
         end
     else
@@ -299,7 +292,7 @@ Window:CreateTask(function()
 end, 1) -- Check every second
 
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
-TriggerSection:AddMultiDropdown("Enchants", enchantOptions, {"Team Up II"}, function(selectedEnchants)
+TriggerSection:AddMultiDropdown("Enchants", enchantOptions, {}, function(selectedEnchants)
     selectedStatesMulti.enchants = selected
 end)
 
@@ -348,9 +341,203 @@ end)
 -- Visuals Tab Sections
 local ESPSection = VisualsTab:AddSection("Rift")
 ESPSection:AddToggle("Auto Rift", false, function(value)
+    toggleStates.autorift = value
 end)
+local function ProcessEggModel(model, rootPos, eggsTable)
+    local rootPart = model:FindFirstChild("Root") or model.PrimaryPart
+    if rootPart then
+        local distance = (rootPart.Position - rootPos).Magnitude
+        if distance <= 30 then
+            table.insert(eggsTable, model.Name)
+            return true
+        end
+    end
+    return false
+end
+local EggPositions = {
+    ["Common Egg"] = Vector3.new(-8.070183753967285, 9.598024368286133, -82.37651062011719),
+    ["Infinity Egg"] = Vector3.new(-99.70166015625, 8.598015785217285, -26.829652786254883),
+    ["Nightmare Egg"] = Vector3.new(-18.746173858642578, 10148.1611328125, 186.91860961914062),
+	["Void Egg"] = Vector3.new(4.745765209197998, 10148.1025390625, 187.00119018554688),
+    ["Rainbow Egg"] = Vector3.new(-36.07754135131836, 15972.72265625, 45.21904754638672)
+}
+local RiftToEggMap = {
+    ["void-egg"] = "Void Egg",
+    ["rainbow-egg"] = "Rainbow Egg",
+    ["nightmare-egg"] = "Nightmare Egg",
+}
+local function getRiftLuck(rift)
+    local displayPart = rift:FindFirstChild("Display")
+    if displayPart then
+        local surfaceGui = displayPart:FindFirstChild("SurfaceGui")
+        if surfaceGui then
+            local icon = surfaceGui:FindFirstChild("Icon")
+            if icon then
+                local luckLabel = icon:FindFirstChild("Luck")
+                if luckLabel and luckLabel:IsA("TextLabel") then
+                    return tonumber(string.match(luckLabel.Text, "x(%d+)"))
+                end
+            end
+        end
+    end
+    return 0
+end
+local lastHatchTime = 0
+local HATCH_COOLDOWN = 1 -- seconds
+local isAtHatchingLocation = false
+local currentHatchingEgg = nil
+local lastRKeyPress = 0
+local R_KEY_INTERVAL = 0.001 -- Press R every 0.5 seconds
+local function smoothTeleportTo(targetCFrame)
+    local character = LP.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
+    local rootPart = character.HumanoidRootPart
+    local startPos = rootPart.Position
+
+    -- Calculate horizontal distance only
+    local horizontalDistance = (Vector3.new(targetCFrame.X, 0, targetCFrame.Z) -
+                                  Vector3.new(startPos.X, 0, startPos.Z)).Magnitude
+    local verticalDifference = math.abs(targetCFrame.Y - startPos.Y)
+
+    -- NEW: Speed INCREASES with distance
+    local teleportSpeed = math.clamp(30 + (horizontalDistance / 10), 5, 10)
+
+    local tweenInfo = TweenInfo.new(
+        horizontalDistance / teleportSpeed, -- Time = Distance / Speed
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    )
+
+    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+
+    return tween
+end
+local function islandHatchLogic()
+    local character = LP.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        print("Character or HumanoidRootPart not found.")
+        isAtHatchingLocation = false
+        return
+    end
+
+    local rootPart = character.HumanoidRootPart
+    local riftsFolder = workspace:FindFirstChild("Rendered") and workspace.Rendered:FindFirstChild("Rifts")
+    local selectedRifts = selectedStatesMulti.rifts or {}
+    local selectedLuck = selectedStatesMulti.riftsLuck or {}
+    
+    -- Reset teleportation state
+    isTeleporting = false
+    targetPosition = nil
+    local eggToHatch = nil
+
+    -- First try to find matching rifts
+    if riftsFolder and #selectedRifts > 0 then
+        local bestRift = nil
+        local highestLuck = 0
+
+        for _, riftName in ipairs(selectedRifts) do
+            local rift = riftsFolder:FindFirstChild(riftName)
+            if rift then
+                local riftLuck = getRiftLuck(rift)
+                if riftLuck > 0 then
+                    local luckStr = "x"..tostring(riftLuck)
+                    if table.find(selectedLuck, luckStr) then
+                        if riftLuck > highestLuck then
+                            highestLuck = riftLuck
+                            bestRift = rift
+                            -- Determine which egg corresponds to this rift
+                           eggToHatch = RiftToEggMap[riftName] or riftName:gsub("-rift", " Egg"):gsub("rift", " Egg")
+                        end
+                    end
+                end
+            end
+        end
+
+        if bestRift then
+            local displayPart = bestRift:FindFirstChild("Display")
+            if displayPart then
+                targetPosition = displayPart.CFrame
+                isTeleporting = true
+                smoothTeleportTo(targetPosition)
+                
+                -- Auto-hatch the corresponding egg if close enough
+                if (rootPart.Position - displayPart.Position).Magnitude < 15 then
+                    -- Set hatching location state
+                    isAtHatchingLocation = true
+                    currentHatchingEgg = eggToHatch
+                    
+                    -- Press R key to open hatching interface
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
+                    task.wait(0.01)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+                    
+                    -- Send hatch request
+                    Remote:FireServer("HatchEgg", eggToHatch, slider.eggquan)
+                else
+                    isAtHatchingLocation = false
+                    currentHatchingEgg = nil
+                end
+                return
+            end
+        end
+    end
+
+    -- Fallback egg handling
+    local fallbackEggName = selectedStates.fallbackEgg
+    if fallbackEggName ~= "" then
+        local fallbackEggPosition = EggPositions[fallbackEggName]
+        if fallbackEggPosition then
+            targetPosition = CFrame.new(fallbackEggPosition)
+            isTeleporting = true
+            smoothTeleportTo(targetPosition)
+            
+            -- Auto-hatch the fallback egg if close enough
+            if (rootPart.Position - fallbackEggPosition).Magnitude < 15 then
+                -- Set hatching location state
+                isAtHatchingLocation = true
+                currentHatchingEgg = fallbackEggName
+                
+                -- Press R key to open hatching interface
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
+                task.wait(0.001)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+                
+                -- Send hatch request
+                Remote:FireServer("HatchEgg", fallbackEggName, slider.eggquan)
+            else
+                isAtHatchingLocation = false
+                currentHatchingEgg = nil
+            end
+        else
+            isAtHatchingLocation = false
+            currentHatchingEgg = nil
+        end
+    else
+        isAtHatchingLocation = false
+        currentHatchingEgg = nil
+    end
+end
+Window:CreateTask(function()
+    if toggleStates.autorift and isAtHatchingLocation and currentHatchingEgg then
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
+        task.wait(0.001)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+    end
+end, 0.001)
+Window:CreateTask(function()
+    if toggleStates.autorift then
+        local success, result = pcall(islandHatchLogic)
+        if not success then
+            warn("Error in auto enchant logic:", result)
+        end
+    end
+end, 0.1)
+
 local FallbackEggOptions = {"Nightmare Egg", "Rainbow Egg", "Void Egg", "Common Egg", "Infinity Egg"}
 ESPSection:AddDropdown("Fallback Egg", FallbackEggOptions, "", function(selected)
+    selectedStates.fallbackEgg = selected
 end)
 local RiftOptions = {"nightmare-egg", "rainbow-egg", "void-egg"}
 ESPSection:AddMultiDropdown("Rifts", RiftOptions, {}, function(selected)
@@ -361,6 +548,7 @@ ESPSection:AddMultiDropdown("Rift's luck", RiftLuckOptions, {}, function(selecte
     selectedStatesMulti.riftsLuck = selected
 end)
 ESPSection:AddSlider("Egg Amount", 1, 6, 6, function(value)
+    slider.eggquan = value
 end)
 
 -- Misc Tab Sections
