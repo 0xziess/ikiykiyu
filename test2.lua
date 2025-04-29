@@ -179,23 +179,44 @@ local function GetCurrentEnchants(petName)
     return result
 end
 local function autoEnchantLogic()
-    -- Check if pet and enchant are selected
+    -- Check if pet is selected
     if not selectedStates.pet or selectedStates.pet == "unknown" then
         print("No pet selected for enchanting.")
         return false
     end
     
-    if not selectedStates.enchant or selectedStates.enchant == "" then
-        print("No desired enchant selected.")
+    -- Check if enchants are selected (now handling both single string and array)
+    local desiredEnchants = {}
+    
+    -- Handle different possible formats of selectedStates.enchants
+    if selectedStates.enchants then
+        -- If it's already an array from multi-dropdown
+        if type(selectedStates.enchants) == "table" then
+            desiredEnchants = selectedStates.enchants
+        else
+            -- If it's a single string
+            table.insert(desiredEnchants, selectedStates.enchants)
+        end
+    elseif selectedStates.enchant then
+        -- For backward compatibility with old single-select dropdown
+        if type(selectedStates.enchant) == "table" then
+            desiredEnchants = selectedStates.enchant
+        else
+            table.insert(desiredEnchants, selectedStates.enchant)
+        end
+    end
+    
+    -- Ensure we have at least one enchant selected
+    if #desiredEnchants == 0 then
+        print("No desired enchants selected.")
         return false
     end
     
-    -- Get the pet UUID and desired enchant
+    -- Get the pet UUID
     local petUUID = selectedStates.pet
-    local desiredEnchant = selectedStates.enchant
     
     print("Checking enchants for pet UUID:", petUUID)
-    print("Desired enchant:", desiredEnchant)
+    print("Desired enchants:", table.concat(desiredEnchants, ", "))
     
     -- Get current enchants for the pet
     local currentEnchants = GetCurrentEnchants(petUUID)
@@ -206,38 +227,61 @@ local function autoEnchantLogic()
             print("  Slot", i, ":", enchant)
         end
         
-        -- Check if the desired enchant is already present
+        -- Check if any of the desired enchants are already present
         local matchFound = false
+        local matchedEnchant = ""
         
+        -- For each current enchant on the pet
         for _, currentEnchant in ipairs(currentEnchants) do
+            -- Skip empty or nil enchants
+            if not currentEnchant or currentEnchant == "" or currentEnchant == "NIL" then
+                continue
+            end
+            
             local cleanedCurrentEnchant = CleanEnchantName(currentEnchant)
-            local trimmedCurrentEnchant = TrimWhitespace(cleanedCurrentEnchant)
+            local trimmedCurrentEnchant = TrimWhitespace(cleanedCurrentEnchant):lower()
             
-            local cleanedDesiredEnchant = CleanEnchantName(desiredEnchant)
-            local trimmedDesiredEnchant = TrimWhitespace(cleanedDesiredEnchant)
+            -- Check against each desired enchant
+            for _, desiredEnchant in ipairs(desiredEnchants) do
+                local cleanedDesiredEnchant = CleanEnchantName(desiredEnchant)
+                local trimmedDesiredEnchant = TrimWhitespace(cleanedDesiredEnchant):lower()
+                
+                print("Comparing:", trimmedCurrentEnchant, "with:", trimmedDesiredEnchant)
+                
+                if trimmedCurrentEnchant == trimmedDesiredEnchant then
+                    print("Desired enchant already obtained:", desiredEnchant)
+                    matchFound = true
+                    matchedEnchant = desiredEnchant
+                    break
+                end
+            end
             
-            print("Comparing:", trimmedCurrentEnchant, "with:", trimmedDesiredEnchant)
-            
-            if trimmedCurrentEnchant == trimmedDesiredEnchant then
-                print("Desired enchant already obtained for pet!")
-                matchFound = true
+            if matchFound then
                 break
             end
         end
         
-        -- If the desired enchant is not found, reroll
+        -- If none of the desired enchants are found, reroll
         if not matchFound then
-            print("Desired enchant not found, rerolling...")
+            print("None of the desired enchants found, rerolling...")
             
             local args = {
                 "RerollEnchants",
                 petUUID
             }
 
-            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Function:InvokeServer(unpack(args))
+            -- Use pcall to handle potential errors
+            local success, result = pcall(function()
+                return game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Function:InvokeServer(unpack(args))
+            end)
+            
+            if not success then
+                warn("Error rerolling enchants:", result)
+            end
             
             return true
         else
+            print("Pet already has desired enchant:", matchedEnchant)
             return false
         end
     else
@@ -247,9 +291,12 @@ local function autoEnchantLogic()
 end
 Window:CreateTask(function()
     if toggleStates.autoEnchantEnabled then
-        autoEnchantLogic()
+        local success, result = pcall(autoEnchantLogic)
+        if not success then
+            warn("Error in auto enchant logic:", result)
+        end
     end
-end, 0.1)
+end, 1) -- Check every second
 
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 TriggerSection:AddDropdown("Enchant", enchantOptions, "", function(selected)

@@ -832,6 +832,15 @@ SectionPadding.Parent = SectionContent
                                 table.insert(selectedList, opt)
                             end
                             callback(selectedList)
+                            
+                            -- Prevent the click from propagating to the container
+                            -- which would toggle the dropdown open/closed state
+                            input.Changed:Connect(function()
+                                if input.UserInputState == Enum.UserInputState.End then
+                                    -- This prevents the click from being detected by the container
+                                    DropdownContainer.InputBegan:Fire()
+                                end
+                            end)
                         end
                     end)
                     
