@@ -664,6 +664,7 @@ SectionPadding.Parent = SectionContent
                             child:Destroy()
                         end
                     end
+                    print("refreshed")
                     
                     -- Add new options
                     for i, option in ipairs(newOptions) do

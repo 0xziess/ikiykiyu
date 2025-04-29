@@ -342,6 +342,12 @@ end
 TriggerSection:AddDropdown("Pet (Equipped in order)", GetEquippedPetNames(), "", function(selected)
     selectedStates.pet = selected
 end)
+TriggerSection:AddButton("Refresh Pets", function()
+    local updatedPets = GetEquippedPetNames()
+    if petDropdown and petDropdown.Refresh then
+        petDropdown:Refresh(updatedPets)
+    end
+end)
 
 -- Optimize Tab Sections
 local OptimizeSection = CombatTab:AddSection("Optimization")
@@ -594,24 +600,17 @@ local R_KEY_INTERVAL = 0.001 -- Press R every 0.5 seconds
 local function smoothTeleportTo(targetCFrame)
     local character = LP.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-
     local rootPart = character.HumanoidRootPart
     local startPos = rootPart.Position
-
-    -- Calculate horizontal distance only
     local horizontalDistance = (Vector3.new(targetCFrame.X, 0, targetCFrame.Z) -
                                   Vector3.new(startPos.X, 0, startPos.Z)).Magnitude
     local verticalDifference = math.abs(targetCFrame.Y - startPos.Y)
-
-    -- NEW: Speed INCREASES with distance
     local teleportSpeed = math.clamp(30 + (horizontalDistance / 10), 5, 10)
-
     local tweenInfo = TweenInfo.new(
         horizontalDistance / teleportSpeed, -- Time = Distance / Speed
         Enum.EasingStyle.Quad,
         Enum.EasingDirection.Out
     )
-
     local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
     tween:Play()
 
@@ -624,22 +623,16 @@ local function islandHatchLogic()
         isAtHatchingLocation = false
         return
     end
-
     local rootPart = character.HumanoidRootPart
     local riftsFolder = workspace:FindFirstChild("Rendered") and workspace.Rendered:FindFirstChild("Rifts")
     local selectedRifts = selectedStatesMulti.rifts or {}
     local selectedLuck = selectedStatesMulti.riftsLuck or {}
-    
-    -- Reset teleportation state
     isTeleporting = false
     targetPosition = nil
     local eggToHatch = nil
-
-    -- First try to find matching rifts
     if riftsFolder and #selectedRifts > 0 then
         local bestRift = nil
         local highestLuck = 0
-
         for _, riftName in ipairs(selectedRifts) do
             local rift = riftsFolder:FindFirstChild(riftName)
             if rift then
@@ -657,26 +650,18 @@ local function islandHatchLogic()
                 end
             end
         end
-
         if bestRift then
             local displayPart = bestRift:FindFirstChild("Display")
             if displayPart then
                 targetPosition = displayPart.CFrame
                 isTeleporting = true
                 smoothTeleportTo(targetPosition)
-                
-                -- Auto-hatch the corresponding egg if close enough
                 if (rootPart.Position - displayPart.Position).Magnitude < 15 then
-                    -- Set hatching location state
                     isAtHatchingLocation = true
                     currentHatchingEgg = eggToHatch
-                    
-                    -- Press R key to open hatching interface
                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
                     task.wait(0.01)
                     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
-                    
-                    -- Send hatch request
                     Remote:FireServer("HatchEgg", eggToHatch, slider.eggquan)
                 else
                     isAtHatchingLocation = false
@@ -686,8 +671,6 @@ local function islandHatchLogic()
             end
         end
     end
-
-    -- Fallback egg handling
     local fallbackEggName = selectedStates.fallbackEgg
     if fallbackEggName ~= "" then
         local fallbackEggPosition = EggPositions[fallbackEggName]
@@ -695,19 +678,12 @@ local function islandHatchLogic()
             targetPosition = CFrame.new(fallbackEggPosition)
             isTeleporting = true
             smoothTeleportTo(targetPosition)
-            
-            -- Auto-hatch the fallback egg if close enough
             if (rootPart.Position - fallbackEggPosition).Magnitude < 15 then
-                -- Set hatching location state
                 isAtHatchingLocation = true
                 currentHatchingEgg = fallbackEggName
-                
-                -- Press R key to open hatching interface
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
                 task.wait(0.001)
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
-                
-                -- Send hatch request
                 Remote:FireServer("HatchEgg", fallbackEggName, slider.eggquan)
             else
                 isAtHatchingLocation = false
