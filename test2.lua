@@ -558,20 +558,30 @@ local RiftToEggMap = {
     ["void-egg"] = "Void Egg",
     ["rainbow-egg"] = "Rainbow Egg",
     ["nightmare-egg"] = "Nightmare Egg",
+    ["silly-egg"] = "Silly Egg",
+    ["man-egg"] = "Aura Egg",
 }
 local function getRiftLuck(rift)
     local displayPart = rift:FindFirstChild("Display")
-    if displayPart then
-        local surfaceGui = displayPart:FindFirstChild("SurfaceGui")
-        if surfaceGui then
-            local icon = surfaceGui:FindFirstChild("Icon")
-            if icon then
-                local luckLabel = icon:FindFirstChild("Luck")
-                if luckLabel and luckLabel:IsA("TextLabel") then
-                    return tonumber(string.match(luckLabel.Text, "x(%d+)"))
-                end
-            end
-        end
+    if not displayPart then return 0 end
+    local surfaceGui = displayPart:FindFirstChild("SurfaceGui")
+    if not surfaceGui then return 0 end
+    local icon = surfaceGui:FindFirstChild("Icon")
+    if not icon then return 0 end
+    local luckLabel = icon:FindFirstChild("Luck")
+    if not luckLabel or not luckLabel:IsA("TextLabel") then return 0 end
+    local luckText = luckLabel.Text
+    local match1 = string.match(luckText, "x(%d+)")
+    if match1 then
+        return tonumber(match1) or 0
+    end
+    local match2 = string.match(luckText, "(%d+)x")
+    if match2 then
+        return tonumber(match2) or 0
+    end
+    local match3 = string.match(luckText, "(%d+)")
+    if match3 then
+        return tonumber(match3) or 0
     end
     return 0
 end
@@ -732,7 +742,7 @@ local FallbackEggOptions = {"Nightmare Egg", "Rainbow Egg", "Void Egg", "Common 
 ESPSection:AddDropdown("Fallback Egg", FallbackEggOptions, "", function(selected)
     selectedStates.fallbackEgg = selected
 end)
-local RiftOptions = {"nightmare-egg", "rainbow-egg", "void-egg"}
+local RiftOptions = {"nightmare-egg", "rainbow-egg", "void-egg", "silly-egg", "man-egg"}
 ESPSection:AddMultiDropdown("Rifts", RiftOptions, {}, function(selected)
     selectedStatesMulti.rifts = selected
 end)

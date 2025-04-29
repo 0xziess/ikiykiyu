@@ -654,11 +654,68 @@ SectionPadding.Parent = SectionContent
                         end
                     end
                 end)
-                
-                -- Set initial value
+
+                local Dropdown = {}
+
+                function Dropdown:Refresh(newOptions)
+                    -- Clear existing options
+                    for _, child in pairs(OptionContainer:GetChildren()) do
+                        if child:IsA("TextButton") then
+                            child:Destroy()
+                        end
+                    end
+                    
+                    -- Add new options
+                    for i, option in ipairs(newOptions) do
+                        local OptionButton = Instance.new("TextButton")
+                        OptionButton.Name = option
+                        OptionButton.Size = UDim2.new(1, 0, 0, 30)
+                        OptionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+                        OptionButton.BorderSizePixel = 0
+                        OptionButton.Text = option
+                        OptionButton.TextColor3 = config.textColor
+                        OptionButton.Font = Enum.Font[config.fontFamily]
+                        OptionButton.TextSize = 14
+                        OptionButton.Parent = OptionContainer
+                        
+                        OptionButton.MouseButton1Click:Connect(function()
+                            selected = option
+                            SelectedLabel.Text = selected
+                            isOpen = false
+                            DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight), "Out", "Quad", 0.2, true)
+                            DropdownArrow.Text = "▼"
+                            callback(selected)
+                        end)
+                        
+                        OptionButton.MouseEnter:Connect(function()
+                            OptionButton.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+                        end)
+                        
+                        OptionButton.MouseLeave:Connect(function()
+                            OptionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+                        end)
+                    end
+                    
+                    -- If the currently selected option is no longer available, reset it
+                    local optionExists = false
+                    for _, option in ipairs(newOptions) do
+                        if option == selected then
+                            optionExists = true
+                            break
+                        end
+                    end
+                    
+                    if not optionExists and #newOptions > 0 then
+                        selected = newOptions[1]
+                        SelectedLabel.Text = selected
+                        callback(selected)
+                    elseif not optionExists then
+                        selected = "Select"
+                        SelectedLabel.Text = selected
+                    end
+                end
                 callback(selected)
-                
-                return DropdownContainer
+                return Dropdown, DropdownContainer
             end
 
             -- Add multi-select dropdown to the section
