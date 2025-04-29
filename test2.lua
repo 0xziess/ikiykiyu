@@ -22,14 +22,17 @@ local toggleStates = {
     autoSellEnabled = false,
     autoCollectEnabled = false,
     autoEnchantEnabled = false,
+    rendering = false,
 }
-
 local selectedStates = {
     enchant = "",
     pet = "",
     fallbackEgg = "",
-    rift = "",
-    riftLuck = ""
+}
+local selectedStatesMulti = {
+    enchants = {},
+    rifts = {},
+    riftsLuck = {}
 }
 
 -- Auto Farm Tab Sections
@@ -250,7 +253,7 @@ end, 0.1)
 
 local enchantOptions = {" Team Up I", "Team Up II", " Team Up III", " Team Up IV", " Team Up V", "  High Roller"}
 TriggerSection:AddDropdown("Enchant", enchantOptions, "", function(selected)
-    selectedStates.enchant = selected
+    selectedStatesMulti.enchants = selected
 end)
 
 local function GetEquippedPetNames()
@@ -286,19 +289,29 @@ end)
 
 -- Optimize Tab Sections
 local OptimizeSection = CombatTab:AddSection("Optimization")
+local function GPURenderingToggle(value)
+    game:GetService("RunService"):Set3dRenderingEnabled(not value)
+end
 OptimizeSection:AddToggle("Disable 3D Rendering", false, function(value)
-    print("3D:", value)
+    toggleStates.rendering = value
+
+    GPURenderingToggle(value)
 end)
 
 -- Visuals Tab Sections
 local ESPSection = VisualsTab:AddSection("Rift")
 ESPSection:AddToggle("Auto Rift", false, function(value)
 end)
-ESPSection:AddDropdown("Fallback Egg", {"ForceField", "Neon", "Plastic"}, "", function(selected)
+local FallbackEggOptions = {"Nightmare Egg", "Rainbow Egg", "Void Egg", "Common Egg", "Infinity Egg"}
+ESPSection:AddDropdown("Fallback Egg", FallbackEggOptions, "", function(selected)
 end)
-ESPSection:AddDropdown("Rifts", {"ForceField", "Neon", "Plastic"}, "", function(selected)
+local RiftOptions = {"nightmare-egg", "rainbow-egg", "void-egg"}
+ESPSection:AddMultiDropdown("Rifts", RiftOptions, "", function(selected)
+    selectedStatesMulti.rifts = selected
 end)
-ESPSection:AddDropdown("Rift's luck", {"ForceField", "Neon", "Plastic"}, "", function(selected)
+local RiftLuckOptions = {"x5", "x10", "x25"}
+ESPSection:AddMultiDropdown("Rift's luck", RiftLuckOptions, "", function(selected)
+    selectedStatesMulti.riftsLuck = selected
 end)
 ESPSection:AddSlider("Egg Amount", 1, 6, 5, function(value)
 end)

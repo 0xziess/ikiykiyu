@@ -660,6 +660,219 @@ SectionPadding.Parent = SectionContent
                 
                 return DropdownContainer
             end
+
+            -- Add multi-select dropdown to the section
+            function Section:AddMultiDropdown(dropdownText, options, defaultSelections, callback)
+                -- Create the container
+                local DropdownContainer = Instance.new("Frame")
+                DropdownContainer.Name = dropdownText .. "MultiDropdown"
+                DropdownContainer.Size = UDim2.new(1, 0, 0, config.elementHeight)
+                DropdownContainer.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+                DropdownContainer.BorderSizePixel = 0
+                DropdownContainer.ClipsDescendants = true
+                DropdownContainer.Parent = SectionContent
+                
+                -- Add corner radius
+                local DropdownCorner = Instance.new("UICorner")
+                DropdownCorner.CornerRadius = UDim.new(0, 4)
+                DropdownCorner.Parent = DropdownContainer
+                
+                -- Add label
+                local DropdownLabel = Instance.new("TextLabel")
+                DropdownLabel.Name = "Label"
+                DropdownLabel.Size = UDim2.new(1, -20, 0, config.elementHeight)
+                DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+                DropdownLabel.BackgroundTransparency = 1
+                DropdownLabel.Text = dropdownText
+                DropdownLabel.TextColor3 = config.textColor
+                DropdownLabel.Font = Enum.Font[config.fontFamily]
+                DropdownLabel.TextSize = 16
+                DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+                DropdownLabel.Parent = DropdownContainer
+                
+                -- Selected items display
+                local SelectedLabel = Instance.new("TextLabel")
+                SelectedLabel.Name = "Selected"
+                SelectedLabel.Size = UDim2.new(0, 100, 0, config.elementHeight)
+                SelectedLabel.Position = UDim2.new(1, -120, 0, 0)
+                SelectedLabel.BackgroundTransparency = 1
+                SelectedLabel.TextColor3 = config.accentColor
+                SelectedLabel.Font = Enum.Font[config.fontFamily]
+                SelectedLabel.TextSize = 16
+                SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
+                SelectedLabel.Parent = DropdownContainer
+                
+                -- Dropdown arrow
+                local DropdownArrow = Instance.new("TextLabel")
+                DropdownArrow.Name = "Arrow"
+                DropdownArrow.Size = UDim2.new(0, 20, 0, 20)
+                DropdownArrow.Position = UDim2.new(1, -25, 0, 8)
+                DropdownArrow.BackgroundTransparency = 1
+                DropdownArrow.Text = "▼"
+                DropdownArrow.TextColor3 = config.textColor
+                DropdownArrow.Font = Enum.Font[config.fontFamily]
+                DropdownArrow.TextSize = 14
+                DropdownArrow.Parent = DropdownContainer
+                
+                -- Options container
+                local OptionContainer = Instance.new("Frame")
+                OptionContainer.Name = "Options"
+                OptionContainer.Size = UDim2.new(1, 0, 0, 0) -- Initially no height
+                OptionContainer.Position = UDim2.new(0, 0, 0, config.elementHeight)
+                OptionContainer.BackgroundTransparency = 1
+                OptionContainer.ClipsDescendants = false
+                OptionContainer.Parent = DropdownContainer
+                
+                -- Options layout
+                local OptionLayout = Instance.new("UIListLayout")
+                OptionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                OptionLayout.Parent = OptionContainer
+                
+                -- Initialize state variables
+                local isOpen = false
+                local selectedOptions = {}
+                
+                -- Initialize with default selections if provided
+                if defaultSelections then
+                    for _, defaultOption in ipairs(defaultSelections) do
+                        selectedOptions[defaultOption] = true
+                    end
+                end
+                
+                -- Function to update the selected label text
+                local function updateSelectedText()
+                    local count = 0
+                    for _ in pairs(selectedOptions) do
+                        count = count + 1
+                    end
+                    
+                    if count == 0 then
+                        SelectedLabel.Text = "None"
+                    elseif count == 1 then
+                        -- Show the single selected item
+                        for option, _ in pairs(selectedOptions) do
+                            SelectedLabel.Text = option
+                            break
+                        end
+                    else
+                        -- Show the count of selected items
+                        SelectedLabel.Text = count .. " selected"
+                    end
+                end
+                
+                -- Set initial selected text
+                updateSelectedText()
+                
+                -- Create option buttons with checkboxes
+                for i, option in ipairs(options) do
+                    local OptionButton = Instance.new("Frame")
+                    OptionButton.Name = option
+                    OptionButton.Size = UDim2.new(1, 0, 0, 30)
+                    OptionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+                    OptionButton.BorderSizePixel = 0
+                    OptionButton.Parent = OptionContainer
+                    
+                    -- Option text
+                    local OptionText = Instance.new("TextLabel")
+                    OptionText.Name = "Text"
+                    OptionText.Size = UDim2.new(1, -40, 1, 0)
+                    OptionText.Position = UDim2.new(0, 40, 0, 0)
+                    OptionText.BackgroundTransparency = 1
+                    OptionText.Text = option
+                    OptionText.TextColor3 = config.textColor
+                    OptionText.Font = Enum.Font[config.fontFamily]
+                    OptionText.TextSize = 14
+                    OptionText.TextXAlignment = Enum.TextXAlignment.Left
+                    OptionText.Parent = OptionButton
+                    
+                    -- Checkbox container
+                    local Checkbox = Instance.new("Frame")
+                    Checkbox.Name = "Checkbox"
+                    Checkbox.Size = UDim2.new(0, 20, 0, 20)
+                    Checkbox.Position = UDim2.new(0, 10, 0.5, -10)
+                    Checkbox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+                    Checkbox.BorderSizePixel = 0
+                    Checkbox.Parent = OptionButton
+                    
+                    -- Checkbox corner
+                    local CheckboxCorner = Instance.new("UICorner")
+                    CheckboxCorner.CornerRadius = UDim.new(0, 4)
+                    CheckboxCorner.Parent = Checkbox
+                    
+                    -- Checkmark (initially invisible)
+                    local Checkmark = Instance.new("TextLabel")
+                    Checkmark.Name = "Checkmark"
+                    Checkmark.Size = UDim2.new(1, 0, 1, 0)
+                    Checkmark.BackgroundTransparency = 1
+                    Checkmark.Text = "✓"
+                    Checkmark.TextColor3 = config.accentColor
+                    Checkmark.Font = Enum.Font[config.fontFamily]
+                    Checkmark.TextSize = 14
+                    Checkmark.Visible = selectedOptions[option] or false
+                    Checkmark.Parent = Checkbox
+                    
+                    -- Make the entire option clickable
+                    OptionButton.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            -- Toggle selection
+                            if selectedOptions[option] then
+                                selectedOptions[option] = nil
+                                Checkmark.Visible = false
+                            else
+                                selectedOptions[option] = true
+                                Checkmark.Visible = true
+                            end
+                            
+                            -- Update the selected text
+                            updateSelectedText()
+                            
+                            -- Call the callback with the selected options
+                            local selectedList = {}
+                            for opt, _ in pairs(selectedOptions) do
+                                table.insert(selectedList, opt)
+                            end
+                            callback(selectedList)
+                        end
+                    end)
+                    
+                    -- Hover effects
+                    OptionButton.MouseEnter:Connect(function()
+                        OptionButton.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+                    end)
+                    
+                    OptionButton.MouseLeave:Connect(function()
+                        OptionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+                    end)
+                end
+                
+                -- Toggle dropdown visibility
+                DropdownContainer.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        isOpen = not isOpen
+                        
+                        if isOpen then
+                            -- Calculate the total height needed for all options
+                            local optionsHeight = #options * 30
+                            DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight + optionsHeight), "Out", "Quad", 0.2, true)
+                            OptionContainer.Size = UDim2.new(1, 0, 0, optionsHeight)
+                            DropdownArrow.Text = "▲"
+                        else
+                            DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight), "Out", "Quad", 0.2, true)
+                            OptionContainer.Size = UDim2.new(1, 0, 0, 0)
+                            DropdownArrow.Text = "▼"
+                        end
+                    end
+                end)
+                
+                -- Initialize callback with default selections
+                local initialSelections = {}
+                for option, _ in pairs(selectedOptions) do
+                    table.insert(initialSelections, option)
+                end
+                callback(initialSelections)
+                
+                return DropdownContainer
+            end
             
             -- Add text input to the section
             function Section:AddTextbox(boxText, defaultText, placeholder, callback)
