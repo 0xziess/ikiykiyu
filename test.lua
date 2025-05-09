@@ -227,12 +227,6 @@ function UILibrary:CreateWindow(title)
             end
         end
         runningTasks = {}
-        
-        -- Clear other references
-        if toggleStates.particleConnection then
-            toggleStates.particleConnection:Disconnect()
-            toggleStates.particleConnection = nil
-        end
     end
 
     function Window:Unload()
