@@ -13,6 +13,9 @@ local config = {
     padding = 10
 }
 
+local connections = {} -- Store all event connections here
+local runningTasks = {} -- Track all running tasks
+
 -- Create the main UI container
 function UILibrary:CreateWindow(title)
     _G.UIRunning = true
@@ -192,25 +195,49 @@ function UILibrary:CreateWindow(title)
             interval = interval or 0.1
         })
         
+        -- Track running tasks
+        runningTasks[taskId] = true
+        
         -- Spawn the task with proper lifecycle management
         task.spawn(function()
             while _G.UIRunning and self.TaskRegistry[taskId] and self.TaskRegistry[taskId].active do
-                -- Execute the callback in protected mode
                 local success, err = pcall(callback)
                 if not success then
                     warn("Task error in " .. taskId .. ": " .. tostring(err))
                 end
-                
-                -- Wait for the specified interval
                 task.wait(self.TaskRegistry[taskId].interval)
             end
+            runningTasks[taskId] = nil -- Clean up when done
         end)
         
         return taskId
     end
 
+    function Window:Cleanup()
+        -- Disconnect all event connections
+        for _, connection in pairs(connections) do
+            connection:Disconnect()
+        end
+        connections = {}
+        
+        -- Stop all tasks
+        for taskId, _ in pairs(runningTasks) do
+            if self.TaskRegistry[taskId] then
+                self.TaskRegistry[taskId].active = false
+            end
+        end
+        runningTasks = {}
+        
+        -- Clear other references
+        if toggleStates.particleConnection then
+            toggleStates.particleConnection:Disconnect()
+            toggleStates.particleConnection = nil
+        end
+    end
+
     function Window:Unload()
         _G.UIRunning = false
+        self:Cleanup()
         if toggleStates then
             for key, _ in pairs(toggleStates) do
                 toggleStates[key] = false
@@ -578,6 +605,19 @@ SectionPadding.Parent = SectionContent
                 SelectedLabel.TextSize = 16
                 SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
                 SelectedLabel.Parent = DropdownContainer
+
+                local SelectionIndicator = Instance.new("Frame")
+                SelectionIndicator.Name = "SelectionIndicator"
+                SelectionIndicator.Size = UDim2.new(0, 4, 0.6, 0)
+                SelectionIndicator.Position = UDim2.new(0, 3, 0.2, 0)
+                SelectionIndicator.BackgroundColor3 = config.accentColor
+                SelectionIndicator.BorderSizePixel = 0
+                SelectionIndicator.Visible = false
+                SelectionIndicator.Parent = DropdownContainer
+                
+                local IndicatorCorner = Instance.new("UICorner")
+                IndicatorCorner.CornerRadius = UDim.new(0, 2)
+                IndicatorCorner.Parent = SelectionIndicator
                 
                 local DropdownArrow = Instance.new("TextLabel")
                 DropdownArrow.Name = "Arrow"
@@ -624,6 +664,14 @@ SectionPadding.Parent = SectionContent
                         isOpen = false
                         DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight), "Out", "Quad", 0.2, true)
                         DropdownArrow.Text = "▼"
+                        
+                        -- Show indicator for selected option
+                        for _, btn in ipairs(OptionContainer:GetChildren()) do
+                            if btn:IsA("TextButton") then
+                                btn.BackgroundColor3 = (btn.Name == selected) and Color3.fromRGB(70, 70, 70) or Color3.fromRGB(55, 55, 55)
+                            end
+                        end
+                        SelectionIndicator.Visible = true
                         callback(selected)
                     end)
                     
@@ -664,6 +712,7 @@ SectionPadding.Parent = SectionContent
                             child:Destroy()
                         end
                     end
+
                     print("refreshed")
                     
                     -- Add new options
@@ -685,6 +734,14 @@ SectionPadding.Parent = SectionContent
                             isOpen = false
                             DropdownContainer:TweenSize(UDim2.new(1, 0, 0, config.elementHeight), "Out", "Quad", 0.2, true)
                             DropdownArrow.Text = "▼"
+                            
+                            -- Update indicators
+                            for _, btn in ipairs(OptionContainer:GetChildren()) do
+                                if btn:IsA("TextButton") then
+                                    btn.BackgroundColor3 = (btn.Name == selected) and Color3.fromRGB(70, 70, 70) or Color3.fromRGB(55, 55, 55)
+                                end
+                            end
+                            SelectionIndicator.Visible = true
                             callback(selected)
                         end)
                         
@@ -702,6 +759,8 @@ SectionPadding.Parent = SectionContent
                     for _, option in ipairs(newOptions) do
                         if option == selected then
                             optionExists = true
+                            OptionButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                            SelectionIndicator.Visible = true
                             break
                         end
                     end
